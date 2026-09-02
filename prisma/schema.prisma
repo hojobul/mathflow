@@ -1,0 +1,329 @@
+// MathFlow — Prisma schema
+// Postgres via Neon (Vercel Marketplace). See README.md for provisioning.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  STUDENT
+  CREATOR
+  ADMIN
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  displayName String
+  avatarUrl   String?
+  role        UserRole @default(STUDENT)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Links this app profile to its Neon Auth (Managed Better Auth) identity —
+  // auth owns login/session, this table stays the FK target for everything
+  // else. Null for guest/system rows (e.g. the seed demo creator) created
+  // before the user ever signs in.
+  authUserId String? @unique
+
+  // UGC authored by this user (when role = CREATOR)
+  authoredContent Content[] @relation("ContentAuthor")
+
+  behaviorLogs   UserBehaviorLog[]
+  preferences    UserPreferenceVector[]
+  submissions    UserSubmission[]
+  likes          Like[]
+  libraryEntries LibraryEntry[]
+  styleProfile   UserStyleProfile?
+
+  subscribedTo  Subscription[] @relation("SubscriberOf") // creators this user follows
+  subscribers   Subscription[] @relation("SubscribedBy") // followers of this user (as a creator)
+
+  @@index([role])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Content
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ContentType {
+  PROBLEM // 단계별 힌트가 적용된 수학 문제
+  HISTORY // 수학사
+  ANECDOTE // 비하인드 스토리 / 일화
+  CONCEPT // 시각화 개념 / 인터랙티브 위젯 중심
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model CategoryTag {
+  id        String   @id @default(cuid())
+  slug      String   @unique // e.g. "calculus", "geometry", "number-theory"
+  name      String
+  createdAt DateTime @default(now())
+
+  contents        ContentCategory[]
+  preferenceStats UserPreferenceVector[]
+
+  @@index([slug])
+}
+
+// Explicit join model (not implicit m2m) so we can add metadata (weight) later.
+model ContentCategory {
+  contentId  String
+  categoryId String
+  content    Content     @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  category   CategoryTag @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, categoryId])
+  @@index([categoryId])
+}
+
+model Content {
+  id      String        @id @default(cuid())
+  type    ContentType
+  status  ContentStatus @default(PUBLISHED)
+  title   String
+  summary String?
+
+  // Block-based rich text body produced by the creator editor.
+  // Shape: { blocks: Array<{ id, kind: "text"|"latex"|"image"|"widget", ... }> }
+  body Json
+
+  // Denormalized plain-text + LaTeX source for full-text / expression search.
+  searchText       String?
+  latexExpressions String[] @default([]) // extracted \(...\) / $$...$$ sources, for expression-unit search
+
+  difficulty       Int @default(1) // 1–5
+  estimatedSeconds Int @default(60) // expected dwell time, used by the interest-score formula
+
+  // Optional interactive graph widget config: { variables: {a,b,c}, ranges, expression }
+  widgetConfig Json?
+
+  // PROBLEM only: grading key, e.g. { kind: "numeric", value: 42, tolerance: 0 }
+  // or { kind: "choice", correctOptionId: "b" }. Null for non-graded content.
+  answerKey Json?
+
+  authorId String?
+  author   User?   @relation("ContentAuthor", fields: [authorId], references: [id])
+
+  categories       ContentCategory[]
+  hints            Hint[]
+  behaviorLogs     UserBehaviorLog[]
+  submissions      UserSubmission[]
+  likes            Like[]
+  libraryEntries   LibraryEntry[]
+  dailyQuizEntries DailyQuizProblem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, status])
+  @@index([difficulty])
+}
+
+// Step-by-step hint ladder: [힌트1: 핵심 개념] -> [힌트2: 접근법] -> [전체 풀이]
+model Hint {
+  id             String  @id @default(cuid())
+  contentId      String
+  content        Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  order          Int // 1, 2, 3 ... ascending reveal order
+  label          String // e.g. "핵심 개념", "접근법", "전체 풀이"
+  body           Json // rich text / LaTeX block, same shape as Content.body
+  isFullSolution Boolean @default(false)
+
+  views HintView[]
+
+  @@unique([contentId, order])
+}
+
+model HintView {
+  id       String   @id @default(cuid())
+  hintId   String
+  hint     Hint     @relation(fields: [hintId], references: [id], onDelete: Cascade)
+  userId   String
+  viewedAt DateTime @default(now())
+
+  @@index([hintId, userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Behavior tracking & recommendation
+// ─────────────────────────────────────────────────────────────────────────
+
+// One row per user×content "viewing session" in the feed. Populated by the
+// batched telemetry endpoint (see docs/event-tracking-protocol.md).
+model UserBehaviorLog {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  sessionId String @unique // one row per content-impression session; upserted by the batch endpoint
+
+  dwellTimeMs         Int     @default(0)
+  scrollDepthPct      Float   @default(0) // 0–100
+  latexFocusTimeMs    Int     @default(0) // time the LaTeX viewport was in view (IntersectionObserver)
+  hintViewCount       Int     @default(0)
+  hintFirstViewedAtMs Int? // ms since content entered viewport
+  answerRevealed      Boolean @default(false)
+  liked               Boolean @default(false)
+  scrapped            Boolean @default(false)
+  quickSkip           Boolean @default(false) // dwell < threshold relative to estimatedSeconds
+
+  interactionCount Int @default(0) // taps/scrolls/widget-drags counted as "engagement"
+
+  // Raw batched client events for this session, for future feature
+  // engineering (kept as JSON so the schema doesn't churn per new event type).
+  rawEvents Json?
+
+  interestScore Float? // computed server-side, see lib/recommendation/scoreEngine.ts
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, contentId])
+  @@index([userId, createdAt])
+  @@index([contentId])
+}
+
+// Per user × category rolling preference, updated after each behavior log
+// is scored. difficultyPreference is an EMA of difficulty the user engages
+// with well (used to keep the feed inside their comfort→stretch band).
+model UserPreferenceVector {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   CategoryTag @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  affinityScore        Float    @default(0) // EMA of interestScore for this category
+  difficultyPreference Float    @default(2.5)
+  sampleCount          Int      @default(0)
+  updatedAt            DateTime @updatedAt
+
+  @@unique([userId, categoryId])
+  @@index([userId])
+}
+
+// Cached radar-chart stats: [논리력, 역사적 호기심, 계산력, 직관력]
+model UserStyleProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  logicScore       Float @default(0)
+  curiosityScore   Float @default(0)
+  calculationScore Float @default(0)
+  intuitionScore   Float @default(0)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Engagement primitives
+// ─────────────────────────────────────────────────────────────────────────
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+}
+
+// 채널 구독: subscriber가 creator(크리에이터)를 팔로우.
+model Subscription {
+  id           String   @id @default(cuid())
+  subscriberId String
+  subscriber   User     @relation("SubscriberOf", fields: [subscriberId], references: [id], onDelete: Cascade)
+  creatorId    String
+  creator      User     @relation("SubscribedBy", fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([subscriberId, creatorId])
+  @@index([creatorId])
+}
+
+enum LibraryEntryType {
+  SCRAP // 스크랩북
+  WRONG_ANSWER // 오답노트
+  CONCEPT_ALBUM // 개념 앨범
+}
+
+model LibraryEntry {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content          @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  type      LibraryEntryType
+  note      String?
+  createdAt DateTime         @default(now())
+
+  @@unique([userId, contentId, type])
+  @@index([userId, type])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Daily Math Rush
+// ─────────────────────────────────────────────────────────────────────────
+
+model DailyQuiz {
+  id              String   @id @default(cuid())
+  date            DateTime @unique @db.Date
+  title           String
+  durationSeconds Int      @default(180)
+  createdAt       DateTime @default(now())
+
+  problems    DailyQuizProblem[]
+  submissions UserSubmission[]
+}
+
+model DailyQuizProblem {
+  id          String    @id @default(cuid())
+  dailyQuizId String
+  dailyQuiz   DailyQuiz @relation(fields: [dailyQuizId], references: [id], onDelete: Cascade)
+  contentId   String
+  content     Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  order       Int
+
+  @@unique([dailyQuizId, order])
+  @@index([contentId])
+}
+
+// Generic submission: either a standalone Content answer or a Daily Quiz
+// problem answer (dailyQuizId set). Used to compute correctness, ranking,
+// and the "상위 N%" feedback.
+model UserSubmission {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId   String
+  content     Content    @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  dailyQuizId String?
+  dailyQuiz   DailyQuiz? @relation(fields: [dailyQuizId], references: [id], onDelete: SetNull)
+
+  answer      Json
+  isCorrect   Boolean
+  timeTakenMs Int
+  submittedAt DateTime @default(now())
+
+  @@index([contentId, isCorrect])
+  @@index([dailyQuizId, isCorrect])
+  @@index([userId, dailyQuizId])
+}
