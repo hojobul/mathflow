@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPersonalizedFeed } from "@/lib/recommendation/feedService";
 
-// TODO(auth): replace `userId` query param with the authenticated session's
-// user id once an auth provider is wired in (see vercel:auth skill).
+// `userId` is client-supplied (see useEffectiveUser) rather than resolved
+// from the session here: feed reads are public, and personalizing a guest's
+// feed by their shared guest id is intentional. Identity-sensitive actions
+// (like/subscribe/publish) resolve the real session server-side instead —
+// see src/lib/auth/currentUser.ts.
 export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId");
   if (!userId) {
@@ -39,6 +42,27 @@ export async function GET(req: NextRequest) {
   });
   const byId = new Map(contents.map((c) => [c.id, c]));
 
+  // Per-viewer like/subscribe state + subscriber counts, batched (3 queries
+  // total) rather than one round trip per card — matters now that
+  // publish-path latency work has shown how much N sequential round trips
+  // costs on a remote DB.
+  const authorIds = [...new Set(contents.map((c) => c.author?.id).filter((id): id is string => !!id))];
+  const [likedRows, subscribedRows, subscriberCounts] = await Promise.all([
+    prisma.like.findMany({ where: { userId, contentId: { in: [...byId.keys()] } }, select: { contentId: true } }),
+    authorIds.length
+      ? prisma.subscription.findMany({
+          where: { subscriberId: userId, creatorId: { in: authorIds } },
+          select: { creatorId: true },
+        })
+      : Promise.resolve([]),
+    authorIds.length
+      ? prisma.subscription.groupBy({ by: ["creatorId"], where: { creatorId: { in: authorIds } }, _count: true })
+      : Promise.resolve([]),
+  ]);
+  const likedContentIds = new Set(likedRows.map((r) => r.contentId));
+  const subscribedCreatorIds = new Set(subscribedRows.map((r) => r.creatorId));
+  const subscriberCountByCreator = new Map(subscriberCounts.map((r) => [r.creatorId, r._count]));
+
   // Preserve rank order — the `findMany ... in` query doesn't guarantee it.
   const orderedItems = items
     .map((item) => {
@@ -52,6 +76,9 @@ export async function GET(req: NextRequest) {
         // bodies are fetched one at a time via /api/content/[id]/hints.
         hints: hints.map(({ id, order, label, isFullSolution }) => ({ id, order, label, isFullSolution })),
         rankScore: item.rankScore,
+        likedByViewer: likedContentIds.has(item.contentId),
+        subscribedByViewer: content.author ? subscribedCreatorIds.has(content.author.id) : false,
+        subscriberCount: content.author ? (subscriberCountByCreator.get(content.author.id) ?? 0) : 0,
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null);

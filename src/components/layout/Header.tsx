@@ -10,8 +10,14 @@ export function Header() {
         <Link href="/" className="font-semibold">
           MathFlow
         </Link>
+        <Link href="/feed" className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white">
+          피드
+        </Link>
         <Link href="/editor" className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white">
           에디터
+        </Link>
+        <Link href="/quiz" className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white">
+          Math Rush
         </Link>
         <Link href="/library" className="text-black/60 hover:text-black dark:text-white/60 dark:hover:text-white">
           라이브러리
