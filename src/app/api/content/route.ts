@@ -28,6 +28,19 @@ const ContentBlockSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+// PROBLEM-only, both optional: an ungraded problem is legal (answer
+// omitted), and hints don't require an answer to exist.
+const AnswerSchema = z.object({
+  kind: z.literal("numeric"),
+  value: z.number(),
+  tolerance: z.number().min(0).default(0),
+});
+const HintDraftSchema = z.object({
+  label: z.string().min(1).max(100),
+  text: z.string().min(1).max(2000),
+  isFullSolution: z.boolean().default(false),
+});
+
 const CreateContentBody = z.object({
   type: z.nativeEnum(ContentType),
   title: z.string().min(1).max(200),
@@ -36,6 +49,8 @@ const CreateContentBody = z.object({
   estimatedSeconds: z.number().int().min(10).max(3600),
   categories: z.array(z.string().min(1)).max(5).default([]),
   body: z.object({ blocks: z.array(ContentBlockSchema).min(1) }),
+  answer: AnswerSchema.optional(),
+  hints: z.array(HintDraftSchema).max(10).optional(),
 });
 
 /** GET /api/content — published content list (newest first), for the library page. */
@@ -105,6 +120,19 @@ export async function POST(req: NextRequest) {
       estimatedSeconds: input.estimatedSeconds,
       authorId: author.id,
       categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+      answerKey: input.answer ? (input.answer as unknown as Prisma.InputJsonValue) : undefined,
+      hints: input.hints?.length
+        ? {
+            create: input.hints.map((h, i) => ({
+              order: i + 1,
+              label: h.label,
+              isFullSolution: h.isFullSolution,
+              body: {
+                blocks: [{ id: crypto.randomUUID(), kind: "text", text: h.text }],
+              } as unknown as Prisma.InputJsonValue,
+            })),
+          }
+        : undefined,
     },
     select: { id: true, title: true },
   });

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { LatexEditor } from "./LatexEditor";
+import { ProblemAnswerEditor, emptyProblemAnswerState, type ProblemAnswerState } from "./ProblemAnswerEditor";
 import type { ContentBody } from "@/lib/content/blocks";
 import { emptyContentBody } from "@/lib/content/blocks";
 import { useSession } from "@/lib/auth/client";
@@ -30,6 +31,7 @@ export function CreatorForm() {
   const [estimatedSeconds, setEstimatedSeconds] = useState(90);
   const [categoriesInput, setCategoriesInput] = useState("");
   const [body, setBody] = useState<ContentBody>(emptyContentBody());
+  const [problemAnswer, setProblemAnswer] = useState<ProblemAnswerState>(emptyProblemAnswerState());
   const [state, setState] = useState<SubmitState>({ status: "idle" });
 
   const hasContent = body.blocks.some(
@@ -56,6 +58,16 @@ export function CreatorForm() {
             .map((c) => c.trim())
             .filter(Boolean),
           body,
+          answer:
+            type === "PROBLEM" && problemAnswer.answer.trim() !== ""
+              ? { kind: "numeric", value: Number(problemAnswer.answer), tolerance: problemAnswer.tolerance }
+              : undefined,
+          hints:
+            type === "PROBLEM" && problemAnswer.hints.length > 0
+              ? problemAnswer.hints
+                  .filter((h) => h.text.trim())
+                  .map((h) => ({ label: h.label.trim() || "힌트", text: h.text.trim(), isFullSolution: h.isFullSolution }))
+              : undefined,
         }),
       });
       if (!res.ok) {
@@ -70,6 +82,7 @@ export function CreatorForm() {
       setDifficulty(2);
       setEstimatedSeconds(90);
       setBody(emptyContentBody());
+      setProblemAnswer(emptyProblemAnswerState());
     } catch (err) {
       setState({ status: "error", message: err instanceof Error ? err.message : "알 수 없는 오류" });
     }
@@ -170,6 +183,8 @@ export function CreatorForm() {
       </div>
 
       <LatexEditor initialValue={body} onChange={setBody} />
+
+      {type === "PROBLEM" && <ProblemAnswerEditor value={problemAnswer} onChange={setProblemAnswer} />}
 
       <div className="flex items-center gap-3">
         <button

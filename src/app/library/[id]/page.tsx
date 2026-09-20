@@ -5,7 +5,10 @@ import { ContentBodyView } from "@/components/content/ContentBodyView";
 import { LikeButton } from "@/components/content/LikeButton";
 import { SubscribeButton } from "@/components/content/SubscribeButton";
 import { InteractiveGraphWidget } from "@/components/content/InteractiveGraphWidget";
+import { HintLadder } from "@/components/content/HintLadder";
+import { CommentSection } from "@/components/content/CommentSection";
 import { getSessionAppUser } from "@/lib/auth/currentUser";
+import { GUEST_USER_ID_CLIENT } from "@/lib/auth/constants";
 import type { ContentBody } from "@/lib/content/blocks";
 import { isGraphWidgetConfig } from "@/lib/content/widget";
 
@@ -25,7 +28,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
       where: { id, status: "PUBLISHED" },
       include: {
         categories: { select: { category: { select: { name: true } } } },
-        hints: { orderBy: { order: "asc" }, select: { order: true, label: true, isFullSolution: true } },
+        hints: { orderBy: { order: "asc" }, select: { id: true, order: true, label: true, isFullSolution: true } },
         author: { select: { id: true, displayName: true } },
         _count: { select: { likes: true } },
       },
@@ -33,6 +36,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
     getSessionAppUser(),
   ]);
   if (!content) notFound();
+  const effectiveUserId = viewer?.id ?? GUEST_USER_ID_CLIENT;
 
   const [likedByViewer, subscriberCount, subscribedByViewer] = await Promise.all([
     viewer
@@ -68,7 +72,9 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
         <h1 className="text-xl font-semibold">{content.title}</h1>
         {content.summary && <p className="mt-1 text-sm text-black/60 dark:text-white/60">{content.summary}</p>}
         {content.author && (
-          <p className="mt-1 text-xs text-black/40 dark:text-white/40">by {content.author.displayName}</p>
+          <Link href={`/creator/${content.author.id}`} className="mt-1 inline-block text-xs text-black/40 hover:underline dark:text-white/40">
+            by {content.author.displayName}
+          </Link>
         )}
       </div>
 
@@ -90,21 +96,10 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
       {isGraphWidgetConfig(content.widgetConfig) && <InteractiveGraphWidget config={content.widgetConfig} />}
 
       {content.hints.length > 0 && (
-        <div className="rounded-md border border-dashed border-black/15 p-4 dark:border-white/20">
-          <h2 className="mb-2 text-sm font-medium">단계별 힌트</h2>
-          <ol className="flex flex-col gap-1 text-sm text-black/60 dark:text-white/60">
-            {content.hints.map((h) => (
-              <li key={h.order}>
-                {h.order}. {h.label}
-                {h.isFullSolution && " (전체 풀이)"}
-              </li>
-            ))}
-          </ol>
-          <p className="mt-2 text-xs text-black/40 dark:text-white/40">
-            힌트 본문은 <code>GET /api/content/{content.id}/hints?userId=...&amp;upTo=N</code>으로 순서대로 열람합니다.
-          </p>
-        </div>
+        <HintLadder contentId={content.id} userId={effectiveUserId} hints={content.hints} />
       )}
+
+      <CommentSection contentId={content.id} />
     </main>
   );
 }

@@ -76,7 +76,9 @@ export function FeedCard({ item, userId }: FeedCardProps) {
         <div className="flex items-center gap-2">
           {item.author && (
             <>
-              <span className="text-xs text-black/40 dark:text-white/40">by {item.author.displayName}</span>
+              <Link href={`/creator/${item.author.id}`} className="text-xs text-black/40 hover:underline dark:text-white/40">
+                by {item.author.displayName}
+              </Link>
               <SubscribeButton
                 creatorId={item.author.id}
                 initialSubscribed={item.subscribedByViewer}

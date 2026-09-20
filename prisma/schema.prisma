@@ -48,6 +48,8 @@ model User {
   subscribedTo  Subscription[] @relation("SubscriberOf") // creators this user follows
   subscribers   Subscription[] @relation("SubscribedBy") // followers of this user (as a creator)
 
+  comments Comment[]
+
   @@index([role])
 }
 
@@ -126,6 +128,7 @@ model Content {
   likes            Like[]
   libraryEntries   LibraryEntry[]
   dailyQuizEntries DailyQuizProblem[]
+  comments         Comment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -257,6 +260,18 @@ model Subscription {
 
   @@unique([subscriberId, creatorId])
   @@index([creatorId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([contentId, createdAt])
 }
 
 enum LibraryEntryType {
