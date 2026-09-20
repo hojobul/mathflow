@@ -6,8 +6,10 @@ import { ContentBodyView } from "./ContentBodyView";
 import { LikeButton } from "./LikeButton";
 import { SubscribeButton } from "./SubscribeButton";
 import { HintLadder } from "./HintLadder";
+import { InteractiveGraphWidget } from "./InteractiveGraphWidget";
 import { useContentTracking } from "@/components/tracking/useContentTracking";
 import type { FeedContentItem } from "@/lib/feed/types";
+import { isGraphWidgetConfig } from "@/lib/content/widget";
 
 const TYPE_LABEL: Record<string, string> = {
   PROBLEM: "문제",
@@ -22,7 +24,7 @@ interface FeedCardProps {
 }
 
 export function FeedCard({ item, userId }: FeedCardProps) {
-  const { containerRef, trackHintView, trackAnswerReveal } = useContentTracking(item.id);
+  const { containerRef, trackHintView, trackAnswerReveal, trackWidgetInteract } = useContentTracking(item.id);
   const [solutionShown, setSolutionShown] = useState(false);
 
   return (
@@ -49,6 +51,10 @@ export function FeedCard({ item, userId }: FeedCardProps) {
       {item.summary && <p className="text-sm text-black/60 dark:text-white/60">{item.summary}</p>}
 
       <ContentBodyView body={item.body} />
+
+      {isGraphWidgetConfig(item.widgetConfig) && (
+        <InteractiveGraphWidget config={item.widgetConfig} onInteract={trackWidgetInteract} />
+      )}
 
       {item.hints.length > 0 && (
         <HintLadder

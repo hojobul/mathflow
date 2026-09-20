@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { ContentBodyView } from "@/components/content/ContentBodyView";
 import { LikeButton } from "@/components/content/LikeButton";
 import { SubscribeButton } from "@/components/content/SubscribeButton";
+import { InteractiveGraphWidget } from "@/components/content/InteractiveGraphWidget";
 import { getSessionAppUser } from "@/lib/auth/currentUser";
 import type { ContentBody } from "@/lib/content/blocks";
+import { isGraphWidgetConfig } from "@/lib/content/widget";
 
 const TYPE_LABEL: Record<string, string> = {
   PROBLEM: "문제",
@@ -84,6 +86,8 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
       <div className="rounded-md border border-black/10 p-4 dark:border-white/10">
         <ContentBodyView body={content.body as unknown as ContentBody} />
       </div>
+
+      {isGraphWidgetConfig(content.widgetConfig) && <InteractiveGraphWidget config={content.widgetConfig} />}
 
       {content.hints.length > 0 && (
         <div className="rounded-md border border-dashed border-black/15 p-4 dark:border-white/20">
