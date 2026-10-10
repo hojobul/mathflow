@@ -8,7 +8,7 @@ import type { ContentBlock, ContentBody } from "@/lib/content/blocks";
  */
 export function ContentBodyView({ body }: { body: ContentBody }) {
   if (body.blocks.length === 0 || body.blocks.every((b) => b.kind === "text" && !b.text.trim())) {
-    return <p className="text-sm text-black/40 dark:text-white/40">아직 내용이 없습니다.</p>;
+    return <p className="text-sm text-muted">아직 내용이 없습니다.</p>;
   }
   return (
     <div className="flex flex-col gap-3">
@@ -20,7 +20,7 @@ export function ContentBodyView({ body }: { body: ContentBody }) {
 }
 
 function ContentBlockView({ block }: { block: ContentBlock }) {
-  const renderError = () => <span className="text-xs text-red-500">수식 오류: 문법을 확인하세요</span>;
+  const renderError = () => <span className="text-xs text-danger">수식 오류: 문법을 확인하세요</span>;
 
   switch (block.kind) {
     case "text":
@@ -40,7 +40,7 @@ function ContentBlockView({ block }: { block: ContentBlock }) {
       return <img src={block.url} alt={block.alt} className="max-w-full rounded" />;
     case "widget":
       return (
-        <div className="rounded border border-dashed border-black/15 p-3 text-xs text-black/50 dark:border-white/20 dark:text-white/50">
+        <div className="rounded border border-dashed border-line p-3 text-xs text-muted">
           인터랙티브 위젯: <code>{block.expression}</code> (변수: {Object.keys(block.variables).join(", ")})
         </div>
       );

@@ -128,10 +128,10 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 rounded-md border border-black/10 bg-black/[.02] p-3 dark:border-white/10 dark:bg-white/[.03]">
+        <div className="flex flex-col gap-2 rounded-md border border-line bg-surface-2 p-3">
           {LATEX_SNIPPET_GROUPS.map((group) => (
             <div key={group.title} className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 shrink-0 text-[11px] font-medium text-black/45 dark:text-white/45">
+              <span className="mr-1 shrink-0 text-[11px] font-medium text-muted">
                 {group.title}
               </span>
               {group.snippets.map((snippet) => (
@@ -140,14 +140,14 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                   type="button"
                   onClick={() => insertSnippet(snippet)}
                   title={`삽입: ${snippet.insert}`}
-                  className="rounded border border-black/10 bg-background px-2.5 py-1.5 text-sm hover:border-black/25 hover:bg-black/5 dark:border-white/15 dark:hover:border-white/30 dark:hover:bg-white/10"
+                  className="rounded border border-line bg-background px-2.5 py-1.5 text-sm hover:border-line hover:bg-surface-2"
                 >
                   <InlineMath math={snippet.label} />
                 </button>
               ))}
             </div>
           ))}
-          <p className="text-[11px] text-black/40 dark:text-white/40">
+          <p className="text-[11px] text-muted">
             {activeLatexBlockId
               ? "선택한 기호가 현재 커서 위치에 삽입됩니다."
               : "수식 블록을 클릭하거나, 기호를 바로 눌러 새 수식 블록을 만들 수 있어요."}
@@ -160,8 +160,8 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
               key={block.id}
               className={`relative rounded-md border p-3 pl-8 ${
                 activeLatexBlockId === block.id
-                  ? "border-blue-400/60 dark:border-blue-400/50"
-                  : "border-black/10 dark:border-white/10"
+                  ? "border-accent "
+                  : "border-line"
               }`}
             >
               <div className="absolute left-1.5 top-3 flex flex-col gap-1">
@@ -170,7 +170,7 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                   onClick={() => moveBlock(block.id, -1)}
                   disabled={i === 0}
                   aria-label="위로 이동"
-                  className="text-xs text-black/35 hover:text-black/70 disabled:opacity-20 dark:text-white/35 dark:hover:text-white/70"
+                  className="text-xs text-muted hover:text-foreground disabled:opacity-20"
                 >
                   ↑
                 </button>
@@ -179,7 +179,7 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                   onClick={() => moveBlock(block.id, 1)}
                   disabled={i === body.blocks.length - 1}
                   aria-label="아래로 이동"
-                  className="text-xs text-black/35 hover:text-black/70 disabled:opacity-20 dark:text-white/35 dark:hover:text-white/70"
+                  className="text-xs text-muted hover:text-foreground disabled:opacity-20"
                 >
                   ↓
                 </button>
@@ -194,7 +194,7 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
               </div>
 
               <div className="mb-1.5 flex items-center gap-2">
-                <span className="rounded bg-black/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-black/50 dark:bg-white/10 dark:text-white/50">
+                <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted">
                   {block.kind === "text" ? "텍스트" : "수식"}
                 </span>
               </div>
@@ -224,10 +224,10 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                     rows={2}
                     spellCheck={false}
                     maxLength={MAX_LATEX_SOURCE_LENGTH}
-                    className="w-full resize-y rounded bg-black/[.03] p-2 font-mono text-sm outline-none dark:bg-white/[.05]"
+                    className="w-full resize-y rounded bg-surface-2 p-2 font-mono text-sm outline-none"
                   />
                   <div className="flex items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 text-xs text-black/60 dark:text-white/60">
+                    <label className="flex items-center gap-2 text-xs text-muted">
                       <input
                         type="checkbox"
                         checked={block.display === "block"}
@@ -238,8 +238,8 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                     <span
                       className={`shrink-0 text-[11px] tabular-nums ${
                         block.source.length >= MAX_LATEX_SOURCE_LENGTH
-                          ? "text-red-500"
-                          : "text-black/35 dark:text-white/35"
+                          ? "text-danger"
+                          : "text-muted"
                       }`}
                     >
                       {block.source.length} / {MAX_LATEX_SOURCE_LENGTH}
@@ -260,14 +260,14 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
           <button
             type="button"
             onClick={() => addBlock("text")}
-            className="rounded border border-black/15 px-3 py-1.5 text-sm hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+            className="rounded border border-line px-3 py-1.5 text-sm hover:bg-surface-2"
           >
             + 텍스트 블록
           </button>
           <button
             type="button"
             onClick={() => addBlock("latex")}
-            className="rounded border border-black/15 px-3 py-1.5 text-sm hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+            className="rounded border border-line px-3 py-1.5 text-sm hover:bg-surface-2"
           >
             + 수식 블록
           </button>
@@ -275,8 +275,8 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
       </div>
 
       <div className="lg:sticky lg:top-4 lg:self-start">
-        <div className="mb-1.5 text-xs font-medium text-black/50 dark:text-white/50">미리보기</div>
-        <div className="rounded-md border border-black/10 bg-background p-4 dark:border-white/10">
+        <div className="mb-1.5 text-xs font-medium text-muted">미리보기</div>
+        <div className="rounded-md border border-line bg-background p-4">
           <ContentBodyView body={body} />
         </div>
       </div>

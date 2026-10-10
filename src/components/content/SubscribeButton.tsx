@@ -46,11 +46,7 @@ export function SubscribeButton({ creatorId, initialSubscribed, initialCount }: 
       type="button"
       onClick={toggle}
       disabled={pending}
-      className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-        subscribed
-          ? "border border-black/15 text-black/60 hover:border-black/30 dark:border-white/20 dark:text-white/60"
-          : "bg-black text-white dark:bg-white dark:text-black"
-      }`}
+      className={subscribed ? "chip" : "btn-primary rounded-full"}
     >
       {subscribed ? `구독 중 · ${count}` : `구독 · ${count}`}
     </button>

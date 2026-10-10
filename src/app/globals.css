@@ -1,26 +1,89 @@
 @import "tailwindcss";
 
+/* ── MathFlow design tokens ─────────────────────────────────────────────
+   Indigo accent on a soft, slightly warm neutral base. Every color the UI
+   uses comes from these variables, so light/dark is one swap, below. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7f7fb;
+  --foreground: #14142b;
+  --surface: #ffffff;
+  --surface-2: #f0f0f8;
+  --line: #e4e4ef;
+  --line-strong: #c9c9dd;
+  --muted: #6b6b86;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eceafd;
+  --accent-ink: #ffffff;
+  --success: #15803d;
+  --danger: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0e0e1a;
+    --foreground: #ececf6;
+    --surface: #16162a;
+    --surface-2: #1e1e36;
+    --line: #2a2a45;
+    --line-strong: #3c3c5e;
+    --muted: #9a9ab8;
+    --accent: #8b85f5;
+    --accent-hover: #a29df8;
+    --accent-soft: #25235a;
+    --accent-ink: #0e0e1a;
+    --success: #4ade80;
+    --danger: #f87171;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-noto-sans-kr), var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .page {
+    @apply mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-5 py-8;
+  }
+  .page-title {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(20_20_43/0.04)];
+  }
+  .card-hover {
+    @apply transition-all hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_6px_20px_rgb(20_20_43/0.08)];
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2 text-sm font-semibold transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-40;
+    color: var(--accent-ink);
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-line-strong hover:bg-surface-2;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-sm transition-colors hover:border-line-strong hover:bg-surface-2 disabled:opacity-50;
+  }
+  .chip-active {
+    @apply border-accent bg-accent-soft font-semibold text-accent;
+  }
 }

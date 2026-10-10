@@ -6,14 +6,19 @@ export interface HintDraft {
   isFullSolution: boolean;
 }
 
+export type AnswerMode = "none" | "numeric" | "choice" | "expression";
+
 export interface ProblemAnswerState {
-  answer: string; // numeric answer as typed text; "" = not set
+  mode: AnswerMode;
+  answer: string; // numeric value or expression text, as typed
   tolerance: number;
+  options: string[]; // choice mode: option texts
+  correctIndex: number;
   hints: HintDraft[];
 }
 
 export function emptyProblemAnswerState(): ProblemAnswerState {
-  return { answer: "", tolerance: 0, hints: [] };
+  return { mode: "none", answer: "", tolerance: 0, options: ["", ""], correctIndex: 0, hints: [] };
 }
 
 interface ProblemAnswerEditorProps {
@@ -38,33 +43,56 @@ export function ProblemAnswerEditor({ value, onChange }: ProblemAnswerEditorProp
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-md border border-black/10 p-4 dark:border-white/10">
+    <div className="flex flex-col gap-4 rounded-md border border-line p-4">
       <div>
-        <h3 className="text-sm font-medium">정답</h3>
-        <p className="text-xs text-black/50 dark:text-white/50">비워두면 채점 없는 문제로 발행돼요 (숫자 정답만 지원).</p>
+        <h3 className="text-sm font-medium">정답 형식</h3>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {([["none", "채점 없음"], ["numeric", "숫자"], ["choice", "객관식"], ["expression", "수식"]] as const).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => onChange({ ...value, mode: m })}
+              className={`rounded-full border px-3 py-1 text-xs ${
+                value.mode === m ? "border-accent bg-accent-soft font-semibold" : "border-line hover:border-line-strong"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-xs text-black/60 dark:text-white/60">정답 (숫자)</span>
-          <input
-            type="number"
-            value={value.answer}
-            onChange={(e) => onChange({ ...value, answer: e.target.value })}
-            placeholder="예: 5"
-            className="w-32 rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-xs text-black/60 dark:text-white/60">허용 오차 (선택)</span>
-          <input
-            type="number"
-            min={0}
-            value={value.tolerance}
-            onChange={(e) => onChange({ ...value, tolerance: Number(e.target.value) || 0 })}
-            className="w-24 rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
-          />
-        </label>
-      </div>
+
+      {value.mode === "numeric" && (
+        <div className="flex items-center gap-3">
+          <input type="number" value={value.answer} onChange={(e) => onChange({ ...value, answer: e.target.value })} placeholder="정답 (숫자)" className="w-36 rounded-lg border border-line bg-transparent px-2 py-1.5 text-sm outline-none focus:border-accent" />
+          <input type="number" min={0} value={value.tolerance} onChange={(e) => onChange({ ...value, tolerance: Number(e.target.value) || 0 })} aria-label="허용 오차" placeholder="허용 오차" className="w-28 rounded-lg border border-line bg-transparent px-2 py-1.5 text-sm outline-none focus:border-accent" />
+        </div>
+      )}
+
+      {value.mode === "expression" && (
+        <div>
+          <input value={value.answer} onChange={(e) => onChange({ ...value, answer: e.target.value })} placeholder="정답 수식 (예: 2x+1)" className="w-full rounded-lg border border-line bg-transparent px-2 py-1.5 text-sm outline-none focus:border-accent" />
+          <p className="mt-1 text-xs text-muted">공백·괄호·대소문자는 무시하고 글자 그대로 비교해요 (2x+1 과 1+2x 는 다른 답).</p>
+        </div>
+      )}
+
+      {value.mode === "choice" && (
+        <div className="flex flex-col gap-2">
+          {value.options.map((opt, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input type="radio" name="correct-option" checked={value.correctIndex === i} onChange={() => onChange({ ...value, correctIndex: i })} aria-label={`${i + 1}번을 정답으로`} />
+              <input value={opt} onChange={(e) => onChange({ ...value, options: value.options.map((o, idx) => (idx === i ? e.target.value : o)) })} placeholder={`보기 ${i + 1}`} className="flex-1 rounded-lg border border-line bg-transparent px-2 py-1.5 text-sm outline-none focus:border-accent" />
+              {value.options.length > 2 && (
+                <button type="button" className="text-xs text-danger" onClick={() => onChange({ ...value, options: value.options.filter((_, idx) => idx !== i), correctIndex: Math.min(value.correctIndex, value.options.length - 2) })}>삭제</button>
+              )}
+            </div>
+          ))}
+          {value.options.length < 6 && (
+            <button type="button" className="self-start text-xs underline" onClick={() => onChange({ ...value, options: [...value.options, ""] })}>+ 보기 추가</button>
+          )}
+          <p className="text-xs text-muted">정답인 보기 왼쪽 라디오를 선택하세요.</p>
+        </div>
+      )}
 
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -72,19 +100,19 @@ export function ProblemAnswerEditor({ value, onChange }: ProblemAnswerEditorProp
           <button
             type="button"
             onClick={addHint}
-            className="rounded border border-black/15 px-2.5 py-1 text-xs hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+            className="rounded border border-line px-2.5 py-1 text-xs hover:bg-surface-2"
           >
             + 힌트 추가
           </button>
         </div>
         {value.hints.length === 0 ? (
-          <p className="text-xs text-black/40 dark:text-white/40">힌트 없이 발행할 수도 있어요.</p>
+          <p className="text-xs text-muted">힌트 없이 발행할 수도 있어요.</p>
         ) : (
           <ol className="flex flex-col gap-3">
             {value.hints.map((hint, i) => (
-              <li key={i} className="rounded border border-black/10 p-3 dark:border-white/15">
+              <li key={i} className="rounded border border-line p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-black/50 dark:text-white/50">힌트 {i + 1}</span>
+                  <span className="text-xs font-medium text-muted">힌트 {i + 1}</span>
                   <button type="button" onClick={() => removeHint(i)} className="text-xs text-red-400 hover:text-red-600">
                     삭제
                   </button>
@@ -93,16 +121,16 @@ export function ProblemAnswerEditor({ value, onChange }: ProblemAnswerEditorProp
                   value={hint.label}
                   onChange={(e) => updateHint(i, { label: e.target.value })}
                   placeholder="힌트 제목 (예: 핵심 개념)"
-                  className="mb-2 w-full rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
+                  className="mb-2 w-full rounded border border-line bg-transparent px-2 py-1.5 text-sm outline-none "
                 />
                 <textarea
                   value={hint.text}
                   onChange={(e) => updateHint(i, { text: e.target.value })}
                   placeholder="힌트 내용"
                   rows={2}
-                  className="mb-2 w-full resize-y rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
+                  className="mb-2 w-full resize-y rounded border border-line bg-transparent px-2 py-1.5 text-sm outline-none "
                 />
-                <label className="flex items-center gap-2 text-xs text-black/60 dark:text-white/60">
+                <label className="flex items-center gap-2 text-xs text-muted">
                   <input
                     type="checkbox"
                     checked={hint.isFullSolution}

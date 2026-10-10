@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPersonalizedFeed } from "@/lib/recommendation/feedService";
+import { toPublicAnswerSpec } from "@/lib/grading";
 
 // `userId` is client-supplied (see useEffectiveUser) rather than resolved
 // from the session here: feed reads are public, and personalizing a guest's
@@ -33,6 +34,7 @@ export async function GET(req: NextRequest) {
       difficulty: true,
       estimatedSeconds: true,
       widgetConfig: true,
+      answerKey: true, // only ever reduced to a public spec below — never returned
       latexExpressions: true,
       categories: { select: { category: { select: { slug: true, name: true } } } },
       hints: { select: { id: true, order: true, label: true, isFullSolution: true } },
@@ -68,13 +70,14 @@ export async function GET(req: NextRequest) {
     .map((item) => {
       const content = byId.get(item.contentId);
       if (!content) return null;
-      const { categories, hints, ...rest } = content;
+      const { categories, hints, answerKey, ...rest } = content;
       return {
         ...rest,
         categories: categories.map((c) => c.category),
         // Answer key never leaves the server; hints are metadata only —
         // bodies are fetched one at a time via /api/content/[id]/hints.
         hints: hints.map(({ id, order, label, isFullSolution }) => ({ id, order, label, isFullSolution })),
+        answerSpec: toPublicAnswerSpec(answerKey),
         rankScore: item.rankScore,
         likedByViewer: likedContentIds.has(item.contentId),
         subscribedByViewer: content.author ? subscribedCreatorIds.has(content.author.id) : false,

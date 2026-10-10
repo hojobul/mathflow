@@ -8,7 +8,7 @@ export function AuthWidget() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
-    return <div className="h-8 w-20 animate-pulse rounded bg-black/5 dark:bg-white/10" />;
+    return <div className="h-8 w-20 animate-pulse rounded bg-surface-2" />;
   }
 
   if (session?.user) {
@@ -31,12 +31,12 @@ function SignedIn({ name }: { name: string }) {
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="text-black/70 dark:text-white/70">{name}</span>
+      <span className="text-muted">{name}</span>
       <button
         type="button"
         onClick={handleSignOut}
         disabled={pending}
-        className="rounded border border-black/15 px-2.5 py-1 text-xs hover:bg-black/5 disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+        className="rounded border border-line px-2.5 py-1 text-xs hover:bg-surface-2 disabled:opacity-50"
       >
         로그아웃
       </button>
@@ -58,7 +58,7 @@ function SignInForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-black"
+        className="btn-primary"
       >
         로그인
       </button>
@@ -85,11 +85,11 @@ function SignInForm() {
     <div className="relative">
       <form
         onSubmit={handleSubmit}
-        className="absolute right-0 top-0 z-10 flex w-64 flex-col gap-2 rounded-md border border-black/10 bg-background p-3 shadow-lg dark:border-white/15"
+        className="absolute right-0 top-0 z-10 flex w-64 flex-col gap-2 card p-3 shadow-lg"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium">{mode === "signIn" ? "로그인" : "회원가입"}</span>
-          <button type="button" onClick={() => setOpen(false)} className="text-xs text-black/40 dark:text-white/40">
+          <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted">
             ✕
           </button>
         </div>
@@ -98,7 +98,7 @@ function SignInForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="이름"
-            className="rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
+            className="rounded border border-line bg-transparent px-2 py-1.5 text-sm outline-none "
           />
         )}
         <input
@@ -107,7 +107,7 @@ function SignInForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="이메일"
           required
-          className="rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
+          className="rounded border border-line bg-transparent px-2 py-1.5 text-sm outline-none "
         />
         <input
           type="password"
@@ -116,20 +116,20 @@ function SignInForm() {
           placeholder="비밀번호"
           required
           minLength={8}
-          className="rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none dark:border-white/20"
+          className="rounded border border-line bg-transparent px-2 py-1.5 text-sm outline-none "
         />
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-black px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="btn-primary w-full"
         >
           {pending ? "처리 중…" : mode === "signIn" ? "로그인" : "가입하기"}
         </button>
         <button
           type="button"
           onClick={() => setMode(mode === "signIn" ? "signUp" : "signIn")}
-          className="text-xs text-black/50 hover:underline dark:text-white/50"
+          className="text-xs text-muted hover:underline"
         >
           {mode === "signIn" ? "계정이 없나요? 회원가입" : "이미 계정이 있나요? 로그인"}
         </button>

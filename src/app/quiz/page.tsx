@@ -6,6 +6,8 @@ import { StyleRadarChart } from "@/components/gamification/StyleRadarChart";
 import { useEffectiveUser } from "@/lib/auth/useEffectiveUser";
 import { useSession } from "@/lib/auth/client";
 import type { ContentBody } from "@/lib/content/blocks";
+import { AnswerInput } from "@/components/content/AnswerInput";
+import type { PublicAnswerSpec, SubmittedAnswer } from "@/lib/grading";
 
 interface QuizProblem {
   id: string;
@@ -14,6 +16,7 @@ interface QuizProblem {
   body: ContentBody;
   difficulty: number;
   estimatedSeconds: number;
+  answerSpec: PublicAnswerSpec;
   alreadySubmitted: boolean;
 }
 
@@ -31,7 +34,6 @@ export default function QuizPage() {
   );
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<string, SubmitResult>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
 
@@ -60,10 +62,8 @@ export default function QuizPage() {
     return `${m}:${String(s).padStart(2, "0")}`;
   }, [secondsLeft]);
 
-  async function submit(problem: QuizProblem) {
+  async function submit(problem: QuizProblem, answer: SubmittedAnswer) {
     if (!quiz || timeUp || submitting) return;
-    const raw = answers[problem.id];
-    if (!raw || Number.isNaN(Number(raw))) return;
     setSubmitting(problem.id);
     try {
       const res = await fetch("/api/daily-quiz/submit", {
@@ -73,7 +73,7 @@ export default function QuizPage() {
           userId,
           dailyQuizId: quiz.id,
           contentId: problem.id,
-          answer: { kind: "numeric", value: Number(raw) },
+          answer,
           timeTakenMs: (quiz.durationSeconds - (secondsLeft ?? 0)) * 1000,
         }),
       });
@@ -88,55 +88,45 @@ export default function QuizPage() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6">
+    <main className="page max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{quiz?.title ?? "오늘의 Math Rush"}</h1>
         <span
           className={`rounded-full px-3 py-1 text-sm font-mono tabular-nums ${
-            timeUp ? "bg-red-500/10 text-red-500" : "bg-black/5 dark:bg-white/10"
+            timeUp ? "bg-red-500/10 text-danger" : "bg-surface-2"
           }`}
         >
           {timeUp ? "종료" : mmss}
         </span>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {!quiz && !error && <p className="text-sm text-black/50 dark:text-white/50">불러오는 중…</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+      {!quiz && !error && <p className="text-sm text-muted">불러오는 중…</p>}
 
       <div className="flex flex-col gap-4">
         {quiz?.problems.map((problem) => {
           const result = results[problem.id];
           const locked = problem.alreadySubmitted || !!result || timeUp;
           return (
-            <div key={problem.id} className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+            <div key={problem.id} className="card p-5">
               <h2 className="mb-2 font-medium">{problem.title}</h2>
               <ContentBodyView body={problem.body} />
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  type="number"
-                  value={answers[problem.id] ?? ""}
-                  onChange={(e) => setAnswers((a) => ({ ...a, [problem.id]: e.target.value }))}
+              <div className="mt-3">
+                <AnswerInput
+                  spec={problem.answerSpec}
                   disabled={locked}
-                  placeholder="답 입력"
-                  className="w-32 rounded border border-black/15 bg-transparent px-2 py-1.5 text-sm outline-none disabled:opacity-50 dark:border-white/20"
+                  pending={submitting === problem.id}
+                  onSubmit={(a) => submit(problem, a)}
                 />
-                <button
-                  type="button"
-                  onClick={() => submit(problem)}
-                  disabled={locked || submitting === problem.id}
-                  className="rounded-md bg-black px-3 py-1.5 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-black"
-                >
-                  {submitting === problem.id ? "제출 중…" : "제출"}
-                </button>
               </div>
               {result && (
-                <p className={`mt-2 text-sm font-medium ${result.isCorrect ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                <p className={`mt-2 text-sm font-medium ${result.isCorrect ? "text-success" : "text-danger"}`}>
                   {result.isCorrect ? "정답! " : "오답. "}
                   {result.message}
                 </p>
               )}
               {problem.alreadySubmitted && !result && (
-                <p className="mt-2 text-sm text-black/40 dark:text-white/40">이미 제출한 문제예요.</p>
+                <p className="mt-2 text-sm text-muted">이미 제출한 문제예요.</p>
               )}
             </div>
           );
@@ -144,7 +134,7 @@ export default function QuizPage() {
       </div>
 
       {session?.user && (
-        <section className="flex flex-col items-center gap-2 rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <section className="flex flex-col items-center gap-2 card p-5">
           <h2 className="text-sm font-medium">나의 수학 스타일</h2>
           <StyleRadar />
         </section>
@@ -170,7 +160,7 @@ function StyleRadar() {
 
   if (!style) return null;
   if (!style.hasActivity) {
-    return <p className="text-xs text-black/40 dark:text-white/40">아직 활동 데이터가 부족해요 — 콘텐츠를 더 둘러보세요.</p>;
+    return <p className="text-xs text-muted">아직 활동 데이터가 부족해요 — 콘텐츠를 더 둘러보세요.</p>;
   }
   return <StyleRadarChart {...style} />;
 }

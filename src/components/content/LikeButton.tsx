@@ -44,11 +44,7 @@ export function LikeButton({ contentId, initialLiked, initialCount }: LikeButton
       type="button"
       onClick={toggle}
       disabled={pending}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors ${
-        liked
-          ? "border-pink-400 bg-pink-500/10 text-pink-500"
-          : "border-black/15 text-black/60 hover:border-black/30 dark:border-white/20 dark:text-white/60 dark:hover:border-white/40"
-      }`}
+      className={liked ? "chip border-pink-400 bg-pink-500/10 text-pink-500" : "chip"}
     >
       <span>{liked ? "♥" : "♡"}</span>
       <span>{count}</span>

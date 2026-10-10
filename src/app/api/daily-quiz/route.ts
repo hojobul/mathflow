@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { toPublicAnswerSpec } from "@/lib/grading";
 
 function todayUtcDateOnly(): Date {
   const now = new Date();
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
         orderBy: { order: "asc" },
         include: {
           content: {
-            select: { id: true, title: true, body: true, difficulty: true, estimatedSeconds: true },
+            select: { id: true, title: true, body: true, difficulty: true, estimatedSeconds: true, answerKey: true },
           },
         },
       },
@@ -44,7 +45,12 @@ export async function GET(req: NextRequest) {
     durationSeconds: quiz.durationSeconds,
     problems: quiz.problems.map((p) => ({
       order: p.order,
-      ...p.content, // answerKey is never selected — safe to spread
+      id: p.content.id,
+      title: p.content.title,
+      body: p.content.body,
+      difficulty: p.content.difficulty,
+      estimatedSeconds: p.content.estimatedSeconds,
+      answerSpec: toPublicAnswerSpec(p.content.answerKey) ?? { kind: "numeric" },
       alreadySubmitted: submittedContentIds.has(p.contentId),
     })),
   });

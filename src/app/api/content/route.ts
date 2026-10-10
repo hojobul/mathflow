@@ -9,6 +9,7 @@ import {
   type ContentBody,
 } from "@/lib/content/blocks";
 import { getSessionAppUser } from "@/lib/auth/currentUser";
+import { normalizeExpression } from "@/lib/grading";
 
 const ContentBlockSchema = z.discriminatedUnion("kind", [
   z.object({ id: z.string(), kind: z.literal("text"), text: z.string() }),
@@ -30,11 +31,15 @@ const ContentBlockSchema = z.discriminatedUnion("kind", [
 
 // PROBLEM-only, both optional: an ungraded problem is legal (answer
 // omitted), and hints don't require an answer to exist.
-const AnswerSchema = z.object({
-  kind: z.literal("numeric"),
-  value: z.number(),
-  tolerance: z.number().min(0).default(0),
-});
+const AnswerSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("numeric"), value: z.number(), tolerance: z.number().min(0).default(0) }),
+  z.object({
+    kind: z.literal("choice"),
+    options: z.array(z.object({ id: z.string().min(1), text: z.string().min(1).max(200) })).min(2).max(6),
+    correctOptionId: z.string().min(1),
+  }),
+  z.object({ kind: z.literal("expression"), raw: z.string().min(1).max(200) }),
+]);
 const HintDraftSchema = z.object({
   label: z.string().min(1).max(100),
   text: z.string().min(1).max(2000),
@@ -120,7 +125,7 @@ export async function POST(req: NextRequest) {
       estimatedSeconds: input.estimatedSeconds,
       authorId: author.id,
       categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
-      answerKey: input.answer ? (input.answer as unknown as Prisma.InputJsonValue) : undefined,
+      answerKey: buildAnswerKey(input.answer),
       hints: input.hints?.length
         ? {
             create: input.hints.map((h, i) => ({
@@ -171,4 +176,11 @@ function slugify(name: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "");
   return slug || `category-${Date.now()}`;
+}
+
+function buildAnswerKey(answer: z.infer<typeof AnswerSchema> | undefined): Prisma.InputJsonValue | undefined {
+  if (!answer) return undefined;
+  if (answer.kind === "expression") return { kind: "expression", normalized: normalizeExpression(answer.raw) };
+  if (answer.kind === "choice" && !answer.options.some((o) => o.id === answer.correctOptionId)) return undefined;
+  return answer as unknown as Prisma.InputJsonValue;
 }

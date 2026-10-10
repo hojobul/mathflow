@@ -6,6 +6,7 @@ import { ContentBodyView } from "./ContentBodyView";
 import { LikeButton } from "./LikeButton";
 import { SubscribeButton } from "./SubscribeButton";
 import { HintLadder } from "./HintLadder";
+import { ProblemSolver } from "./ProblemSolver";
 import { InteractiveGraphWidget } from "./InteractiveGraphWidget";
 import { useContentTracking } from "@/components/tracking/useContentTracking";
 import type { FeedContentItem } from "@/lib/feed/types";
@@ -30,16 +31,16 @@ export function FeedCard({ item, userId }: FeedCardProps) {
   return (
     <article
       ref={containerRef}
-      className="flex max-h-[80vh] flex-col gap-3 overflow-y-auto rounded-lg border border-black/10 p-5 dark:border-white/10"
+      className="card flex max-h-[85vh] flex-col gap-3 overflow-y-auto p-5"
     >
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-black/50 dark:text-white/50">
-        <span className="rounded bg-black/5 px-1.5 py-0.5 font-medium dark:bg-white/10">
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
+        <span className="rounded bg-surface-2 px-1.5 py-0.5 font-medium">
           {TYPE_LABEL[item.type] ?? item.type}
         </span>
         <span>난이도 {item.difficulty}/5</span>
         <span>· 약 {item.estimatedSeconds}초</span>
         {item.categories.map((c) => (
-          <span key={c.slug} className="rounded-full border border-black/10 px-2 py-0.5 dark:border-white/15">
+          <span key={c.slug} className="rounded-full border border-line px-2 py-0.5">
             {c.name}
           </span>
         ))}
@@ -48,13 +49,15 @@ export function FeedCard({ item, userId }: FeedCardProps) {
       <Link href={`/library/${item.id}`} className="text-lg font-semibold hover:underline">
         {item.title}
       </Link>
-      {item.summary && <p className="text-sm text-black/60 dark:text-white/60">{item.summary}</p>}
+      {item.summary && <p className="text-sm text-muted">{item.summary}</p>}
 
       <ContentBodyView body={item.body} />
 
       {isGraphWidgetConfig(item.widgetConfig) && (
         <InteractiveGraphWidget config={item.widgetConfig} onInteract={trackWidgetInteract} />
       )}
+
+      {item.answerSpec && <ProblemSolver contentId={item.id} spec={item.answerSpec} />}
 
       {item.hints.length > 0 && (
         <HintLadder
@@ -76,7 +79,7 @@ export function FeedCard({ item, userId }: FeedCardProps) {
         <div className="flex items-center gap-2">
           {item.author && (
             <>
-              <Link href={`/creator/${item.author.id}`} className="text-xs text-black/40 hover:underline dark:text-white/40">
+              <Link href={`/creator/${item.author.id}`} className="text-xs text-muted hover:underline">
                 by {item.author.displayName}
               </Link>
               <SubscribeButton

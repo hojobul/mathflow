@@ -67,25 +67,25 @@ export function InteractiveGraphWidget({ config, onInteract }: InteractiveGraphW
   const zeroX = X_MIN <= 0 && X_MAX >= 0 ? toSvg(0, 0)[0] : null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-black/10 p-3 dark:border-white/10">
-      <div className="rounded bg-black/[.02] px-2 py-1 font-mono text-xs text-black/60 dark:bg-white/[.04] dark:text-white/60">
+    <div className="card flex flex-col gap-3 p-4">
+      <div className="rounded bg-surface-2 px-2 py-1 font-mono text-xs text-muted">
         y = {config.expression}
       </div>
 
       {evalError ? (
-        <p className="text-xs text-red-500">수식을 계산할 수 없어요: {evalError}</p>
+        <p className="text-xs text-danger">수식을 계산할 수 없어요: {evalError}</p>
       ) : (
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full max-w-xs self-center" role="img" aria-label="함수 그래프">
           <rect x={0} y={0} width={WIDTH} height={HEIGHT} className="fill-none" />
           {zeroX !== null && (
-            <line x1={zeroX} y1={PADDING} x2={zeroX} y2={HEIGHT - PADDING} className="stroke-black/15 dark:stroke-white/15" strokeWidth={1} />
+            <line x1={zeroX} y1={PADDING} x2={zeroX} y2={HEIGHT - PADDING} className="stroke-[var(--line-strong)]" strokeWidth={1} />
           )}
           {zeroY !== null && (
-            <line x1={PADDING} y1={zeroY} x2={WIDTH - PADDING} y2={zeroY} className="stroke-black/15 dark:stroke-white/15" strokeWidth={1} />
+            <line x1={PADDING} y1={zeroY} x2={WIDTH - PADDING} y2={zeroY} className="stroke-[var(--line-strong)]" strokeWidth={1} />
           )}
           <path
             d={pathD}
-            className="fill-none stroke-[#2a78d6] dark:stroke-[#3987e5]"
+            className="fill-none stroke-accent"
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"

@@ -1,4 +1,5 @@
 import type { ContentBody } from "@/lib/content/blocks";
+import type { PublicAnswerSpec } from "@/lib/grading";
 
 /** Shape returned by GET /api/feed — mirrors the `select` in src/app/api/feed/route.ts. */
 export interface FeedContentItem {
@@ -15,6 +16,7 @@ export interface FeedContentItem {
   hints: { id: string; order: number; label: string; isFullSolution: boolean }[];
   author: { id: string; displayName: string; avatarUrl: string | null } | null;
   _count: { likes: number };
+  answerSpec: PublicAnswerSpec | null;
   rankScore: number;
   likedByViewer: boolean;
   subscribedByViewer: boolean;

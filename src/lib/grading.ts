@@ -5,7 +5,11 @@ const NumericKey = z.object({
   value: z.number(),
   tolerance: z.number().default(0),
 });
-const ChoiceKey = z.object({ kind: z.literal("choice"), correctOptionId: z.string() });
+const ChoiceKey = z.object({
+  kind: z.literal("choice"),
+  correctOptionId: z.string(),
+  options: z.array(z.object({ id: z.string(), text: z.string() })).default([]),
+});
 const ExpressionKey = z.object({
   kind: z.literal("expression"),
   // normalized-string comparison (whitespace/paren-insensitive) — a stand-in
@@ -19,9 +23,28 @@ export type AnswerKey = z.infer<typeof AnswerKey>;
 export const SubmittedAnswer = z.union([
   z.object({ kind: z.literal("numeric"), value: z.number() }),
   z.object({ kind: z.literal("choice"), optionId: z.string() }),
-  z.object({ kind: z.literal("expression"), raw: z.string() }),
+  z.object({ kind: z.literal("expression"), raw: z.string().max(200) }),
 ]);
 export type SubmittedAnswer = z.infer<typeof SubmittedAnswer>;
+
+/** What the client may see about a problem's answer format — never the answer itself. */
+export type PublicAnswerSpec =
+  | { kind: "numeric" }
+  | { kind: "choice"; options: { id: string; text: string }[] }
+  | { kind: "expression" };
+
+export function toPublicAnswerSpec(rawKey: unknown): PublicAnswerSpec | null {
+  const key = AnswerKey.safeParse(rawKey);
+  if (!key.success) return null;
+  switch (key.data.kind) {
+    case "numeric":
+      return { kind: "numeric" };
+    case "choice":
+      return { kind: "choice", options: key.data.options };
+    case "expression":
+      return { kind: "expression" };
+  }
+}
 
 export function gradeAnswer(rawKey: unknown, rawSubmitted: unknown): boolean {
   const key = AnswerKey.safeParse(rawKey);
@@ -45,6 +68,6 @@ export function gradeAnswer(rawKey: unknown, rawSubmitted: unknown): boolean {
   }
 }
 
-function normalizeExpression(raw: string): string {
-  return raw.replace(/\s+/g, "").replace(/[()]/g, "").toLowerCase();
+export function normalizeExpression(raw: string): string {
+  return raw.replace(/\s+/g, "").replace(/[()]/g, "").replace(/\\left|\\right/g, "").toLowerCase();
 }

@@ -46,15 +46,15 @@ export default function FeedPage() {
   }, [userLoading]);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 p-6">
-      <h1 className="text-xl font-semibold">피드</h1>
+    <main className="page max-w-2xl">
+      <h1 className="page-title">피드</h1>
 
       {!initialLoaded && userLoading === false && loading && (
-        <p className="text-sm text-black/50 dark:text-white/50">불러오는 중…</p>
+        <p className="text-sm text-muted">불러오는 중…</p>
       )}
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {initialLoaded && items.length === 0 && !error && (
-        <p className="text-sm text-black/50 dark:text-white/50">
+        <p className="text-sm text-muted">
           아직 볼 콘텐츠가 없어요. <a href="/editor" className="underline">먼저 하나 만들어볼까요?</a>
         </p>
       )}
@@ -70,7 +70,7 @@ export default function FeedPage() {
           type="button"
           onClick={() => loadMore(cursor)}
           disabled={loading}
-          className="self-center rounded-md border border-black/15 px-4 py-2 text-sm hover:bg-black/5 disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+          className="btn-ghost self-center"
         >
           {loading ? "불러오는 중…" : "더 보기"}
         </button>

@@ -54,7 +54,7 @@ export function StyleRadarChart({
           <polygon
             key={ring}
             points={ringPoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")}
-            className="fill-none stroke-black/10 dark:stroke-white/10"
+            className="fill-none stroke-[var(--line-strong)]"
             strokeWidth={1}
           />
         );
@@ -71,7 +71,7 @@ export function StyleRadarChart({
               y1={CENTER}
               x2={edge.x}
               y2={edge.y}
-              className="stroke-black/10 dark:stroke-white/10"
+              className="stroke-[var(--line-strong)]"
               strokeWidth={1}
             />
             <text
@@ -79,7 +79,7 @@ export function StyleRadarChart({
               y={labelPos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              className="fill-black/60 text-[10px] dark:fill-white/60"
+              className="fill-[var(--muted)] text-[10px]"
             >
               {axis.label}
             </text>
@@ -90,12 +90,12 @@ export function StyleRadarChart({
       {/* data polygon — single series */}
       <polygon
         points={polygon}
-        className="fill-[#2a78d6]/20 stroke-[#2a78d6] dark:fill-[#3987e5]/25 dark:stroke-[#3987e5]"
+        className="fill-accent/20 stroke-accent"
         strokeWidth={2}
         strokeLinejoin="round"
       />
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3} className="fill-[#2a78d6] dark:fill-[#3987e5]" />
+        <circle key={i} cx={p.x} cy={p.y} r={3} className="fill-accent" />
       ))}
     </svg>
   );

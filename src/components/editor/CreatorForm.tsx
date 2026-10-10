@@ -21,6 +21,21 @@ type SubmitState =
   | { status: "success"; contentId: string; title: string }
   | { status: "error"; message: string };
 
+function buildAnswerPayload(a: ProblemAnswerState) {
+  if (a.mode === "numeric" && a.answer.trim() !== "" && !Number.isNaN(Number(a.answer))) {
+    return { kind: "numeric", value: Number(a.answer), tolerance: a.tolerance };
+  }
+  if (a.mode === "expression" && a.answer.trim() !== "") {
+    return { kind: "expression", raw: a.answer.trim() };
+  }
+  if (a.mode === "choice") {
+    const options = a.options.map((text, i) => ({ id: String(i + 1), text: text.trim() })).filter((o) => o.text);
+    const correct = a.options[a.correctIndex]?.trim() ? String(a.correctIndex + 1) : null;
+    if (options.length >= 2 && correct) return { kind: "choice", options, correctOptionId: correct };
+  }
+  return undefined;
+}
+
 /** Full 크리에이터 업로드 폼: 메타데이터 + LatexEditor + 발행 버튼. */
 export function CreatorForm() {
   const { data: session, isPending: sessionPending } = useSession();
@@ -58,10 +73,7 @@ export function CreatorForm() {
             .map((c) => c.trim())
             .filter(Boolean),
           body,
-          answer:
-            type === "PROBLEM" && problemAnswer.answer.trim() !== ""
-              ? { kind: "numeric", value: Number(problemAnswer.answer), tolerance: problemAnswer.tolerance }
-              : undefined,
+          answer: type === "PROBLEM" ? buildAnswerPayload(problemAnswer) : undefined,
           hints:
             type === "PROBLEM" && problemAnswer.hints.length > 0
               ? problemAnswer.hints
@@ -106,39 +118,39 @@ export function CreatorForm() {
         </div>
       )}
       {state.status === "error" && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-danger">
           업로드 실패: {state.message}
         </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-xs font-medium text-black/60 dark:text-white/60">제목 *</span>
+          <span className="text-xs font-medium text-muted">제목 *</span>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="예: 이차방정식의 판별식"
             required
-            className="rounded border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/40"
+            className="rounded border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </label>
 
         <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="text-xs font-medium text-black/60 dark:text-white/60">요약 (선택)</span>
+          <span className="text-xs font-medium text-muted">요약 (선택)</span>
           <input
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             placeholder="피드 카드에 표시될 한 줄 요약"
-            className="rounded border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/40"
+            className="rounded border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-black/60 dark:text-white/60">유형</span>
+          <span className="text-xs font-medium text-muted">유형</span>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as typeof type)}
-            className="rounded border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/40"
+            className="rounded border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
           >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -149,17 +161,17 @@ export function CreatorForm() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-black/60 dark:text-white/60">카테고리 (쉼표로 구분)</span>
+          <span className="text-xs font-medium text-muted">카테고리 (쉼표로 구분)</span>
           <input
             value={categoriesInput}
             onChange={(e) => setCategoriesInput(e.target.value)}
             placeholder="예: 미적분, 기하"
-            className="rounded border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/40"
+            className="rounded border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-black/60 dark:text-white/60">난이도: {difficulty} / 5</span>
+          <span className="text-xs font-medium text-muted">난이도: {difficulty} / 5</span>
           <input
             type="range"
             min={1}
@@ -170,14 +182,14 @@ export function CreatorForm() {
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-black/60 dark:text-white/60">예상 소요 시간 (초)</span>
+          <span className="text-xs font-medium text-muted">예상 소요 시간 (초)</span>
           <input
             type="number"
             min={10}
             max={3600}
             value={estimatedSeconds}
             onChange={(e) => setEstimatedSeconds(Number(e.target.value))}
-            className="rounded border border-black/15 bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/20 dark:focus:border-white/40"
+            className="rounded border border-line bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </label>
       </div>
@@ -190,11 +202,11 @@ export function CreatorForm() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
+          className="rounded-md btn-primary"
         >
           {state.status === "submitting" ? "발행 중…" : "발행하기"}
         </button>
-        {!hasContent && <span className="text-xs text-black/40 dark:text-white/40">본문을 입력하면 발행할 수 있어요.</span>}
+        {!hasContent && <span className="text-xs text-muted">본문을 입력하면 발행할 수 있어요.</span>}
       </div>
     </form>
   );

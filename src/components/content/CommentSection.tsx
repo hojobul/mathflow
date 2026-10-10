@@ -52,14 +52,14 @@ export function CommentSection({ contentId }: { contentId: string }) {
       <h2 className="text-sm font-medium">댓글 {comments ? `${comments.length}개` : ""}</h2>
 
       {comments === null ? (
-        <p className="text-xs text-black/40 dark:text-white/40">불러오는 중…</p>
+        <p className="text-xs text-muted">불러오는 중…</p>
       ) : comments.length === 0 ? (
-        <p className="text-xs text-black/40 dark:text-white/40">아직 댓글이 없어요.</p>
+        <p className="text-xs text-muted">아직 댓글이 없어요.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {comments.map((c) => (
-            <li key={c.id} className="rounded-md border border-black/10 p-3 text-sm dark:border-white/10">
-              <div className="mb-1 flex items-center gap-2 text-xs text-black/50 dark:text-white/50">
+            <li key={c.id} className="rounded-md border border-line p-3 text-sm">
+              <div className="mb-1 flex items-center gap-2 text-xs text-muted">
                 <Link href={`/creator/${c.author.id}`} className="font-medium hover:underline">
                   {c.author.displayName}
                 </Link>
@@ -71,7 +71,7 @@ export function CommentSection({ contentId }: { contentId: string }) {
         </ul>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
 
       {session?.user ? (
         <form onSubmit={submit} className="flex flex-col gap-2">
@@ -81,18 +81,18 @@ export function CommentSection({ contentId }: { contentId: string }) {
             placeholder="댓글을 입력하세요…"
             rows={2}
             maxLength={2000}
-            className="rounded border border-black/15 bg-transparent p-2 text-sm outline-none dark:border-white/20"
+            className="rounded-xl border border-line bg-transparent p-3 text-sm outline-none focus:border-accent"
           />
           <button
             type="submit"
             disabled={!draft.trim() || posting}
-            className="self-end rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40 dark:bg-white dark:text-black"
+            className="btn-primary self-end"
           >
             {posting ? "작성 중…" : "댓글 달기"}
           </button>
         </form>
       ) : (
-        <p className="text-xs text-black/40 dark:text-white/40">댓글을 달려면 로그인이 필요해요.</p>
+        <p className="text-xs text-muted">댓글을 달려면 로그인이 필요해요.</p>
       )}
     </section>
   );

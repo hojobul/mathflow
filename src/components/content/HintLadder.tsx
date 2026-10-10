@@ -49,10 +49,10 @@ export function HintLadder({ contentId, userId, hints, onHintRevealed }: HintLad
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-dashed border-black/15 p-3 dark:border-white/20">
+    <div className="flex flex-col gap-2 rounded-xl border border-dashed border-line-strong p-3">
       {revealed.map((h) => (
-        <div key={h.id} className="border-b border-black/5 pb-2 last:border-0 dark:border-white/10">
-          <p className="mb-1 text-[11px] font-medium text-black/50 dark:text-white/50">
+        <div key={h.id} className="border-b border-line pb-2 last:border-0">
+          <p className="mb-1 text-[11px] font-medium text-muted">
             힌트 {h.order} · {h.label}
           </p>
           <ContentBodyView body={h.body} />
@@ -63,12 +63,12 @@ export function HintLadder({ contentId, userId, hints, onHintRevealed }: HintLad
           type="button"
           onClick={revealNext}
           disabled={loading}
-          className="self-start rounded-md border border-black/15 px-3 py-1.5 text-xs hover:bg-black/5 disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/10"
+          className="btn-ghost self-start text-xs"
         >
           {loading ? "불러오는 중…" : `힌트 ${next.order} 보기 · ${next.label}`}
         </button>
       ) : (
-        <p className="text-xs text-black/40 dark:text-white/40">모든 힌트를 확인했어요.</p>
+        <p className="text-xs text-muted">모든 힌트를 확인했어요.</p>
       )}
     </div>
   );
