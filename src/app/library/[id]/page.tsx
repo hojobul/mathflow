@@ -23,7 +23,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const [content, viewer] = await Promise.all([
     prisma.content.findUnique({
-      where: { id, status: "PUBLISHED" },
+      where: { id },
       include: {
         categories: { select: { category: { select: { name: true } } } },
         hints: { orderBy: { order: "asc" }, select: { id: true, order: true, label: true, isFullSolution: true } },
@@ -34,6 +34,9 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
     getSessionAppUser(),
   ]);
   if (!content) notFound();
+  const isOwner = !!viewer && viewer.id === content.authorId;
+  const linkViewable = content.status === "PUBLISHED" && content.visibility !== "PRIVATE";
+  if (!linkViewable && !isOwner) notFound();
   const effectiveUserId = viewer?.id ?? GUEST_USER_ID_CLIENT;
   const answerSpec = toPublicAnswerSpec(content.answerKey);
 
@@ -62,10 +65,27 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
         탐색
       </Link>
 
+      {isOwner && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-foreground bg-accent-soft px-4 py-2 text-sm">
+          <span>
+            {content.status === "DRAFT"
+              ? "임시저장 상태입니다. 작성자만 볼 수 있습니다."
+              : content.visibility === "PRIVATE"
+                ? "비공개 콘텐츠입니다. 작성자만 볼 수 있습니다."
+                : content.visibility === "UNLISTED"
+                  ? "일부공개 콘텐츠입니다. 링크를 아는 사람만 볼 수 있습니다."
+                  : "공개 콘텐츠입니다."}
+          </span>
+          <Link href={`/editor?edit=${content.id}`} className="btn-ghost !h-7 !px-3 text-xs">
+            수정
+          </Link>
+        </div>
+      )}
+
       <header>
         <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="tag">{TYPE_LABEL[content.type] ?? content.type}</span>
-          {content.isShort && (
+          {content.inShorts && (
             <span className="tag bg-foreground" style={{ color: "var(--accent-ink)" }}>
               쇼츠
             </span>

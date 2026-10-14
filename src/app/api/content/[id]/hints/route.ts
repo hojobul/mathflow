@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { canViewContent } from "@/lib/content/access";
 
 /**
  * 단계별 힌트 차등 열람: [힌트 1] -> [힌트 2] -> [전체 풀이].
@@ -19,6 +20,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const upTo = Number(upToParam);
   if (!Number.isInteger(upTo) || upTo < 1) {
     return NextResponse.json({ error: "upTo must be a positive integer" }, { status: 400 });
+  }
+
+  if (!(await canViewContent(contentId))) {
+    return NextResponse.json({ error: "content or hints not found" }, { status: 404 });
   }
 
   const hints = await prisma.hint.findMany({

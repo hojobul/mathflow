@@ -15,6 +15,7 @@ const ExpressionKey = z.object({
   // normalized-string comparison (whitespace/paren-insensitive) — a stand-in
   // for a real CAS equivalence check (e.g. via a symbolic-math microservice).
   normalized: z.string(),
+  raw: z.string().optional(), // 작성자 편집용 원문. 클라이언트에는 나가지 않는다.
 });
 
 export const AnswerKey = z.discriminatedUnion("kind", [NumericKey, ChoiceKey, ExpressionKey]);

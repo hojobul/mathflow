@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { LibraryEntryType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { canViewContent } from "@/lib/content/access";
 import { getOrCreateGuestUser, getSessionAppUser } from "@/lib/auth/currentUser";
 import { gradeAnswer, SubmittedAnswer } from "@/lib/grading";
 
@@ -17,6 +18,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  if (!(await canViewContent(contentId))) {
+    return NextResponse.json({ error: "채점 대상이 아닌 콘텐츠입니다" }, { status: 404 });
   }
 
   const [sessionUser, content] = await Promise.all([

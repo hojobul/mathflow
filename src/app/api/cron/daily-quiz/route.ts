@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ContentType, ContentStatus, Prisma } from "@prisma/client";
+import { ContentType, Prisma } from "@prisma/client";
+import { PUBLICLY_LISTED } from "@/lib/content/access";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
   }
 
   const candidates = await prisma.content.findMany({
-    where: { type: ContentType.PROBLEM, status: ContentStatus.PUBLISHED, answerKey: { not: Prisma.DbNull } },
+    where: { ...PUBLICLY_LISTED, type: ContentType.PROBLEM, answerKey: { not: Prisma.DbNull } },
     select: { id: true },
   });
   if (candidates.length === 0) {

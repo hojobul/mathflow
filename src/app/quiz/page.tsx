@@ -18,6 +18,7 @@ interface QuizProblem {
   estimatedSeconds: number;
   answerSpec: PublicAnswerSpec;
   alreadySubmitted: boolean;
+  submittedCorrect: boolean | null;
 }
 
 interface SubmitResult {
@@ -26,44 +27,73 @@ interface SubmitResult {
   message: string;
 }
 
+interface Quiz {
+  id: string;
+  title: string;
+  durationSeconds: number;
+  problems: QuizProblem[];
+}
+
+const mmss = (total: number) => `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+
 export default function QuizPage() {
   const { id: userId } = useEffectiveUser();
   const { data: session } = useSession();
-  const [quiz, setQuiz] = useState<{ id: string; title: string; durationSeconds: number; problems: QuizProblem[] } | null>(
-    null,
-  );
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [finishedAt, setFinishedAt] = useState<number | null>(null);
   const [results, setResults] = useState<Record<string, SubmitResult>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     fetch(`/api/daily-quiz?userId=${userId}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(res.status === 404 ? "오늘의 퀴즈가 아직 없습니다." : `불러오기 실패 (${res.status})`))))
-      .then((data) => {
+      .then((res) =>
+        res.ok ? res.json() : Promise.reject(new Error(res.status === 404 ? "오늘의 퀴즈가 아직 없습니다." : `불러오기 실패 (${res.status})`)),
+      )
+      .then((data: Quiz) => {
         setQuiz(data);
-        setSecondsLeft(data.durationSeconds);
+        // 새로고침해도 타이머가 처음부터 다시 시작하지 않도록 시작 시각을 브라우저에 남긴다.
+        const key = `mathflow:rush:${data.id}:${userId}`;
+        let started = Date.now();
+        try {
+          const saved = Number(localStorage.getItem(key));
+          if (saved > 0) started = saved;
+          else localStorage.setItem(key, String(started));
+        } catch {
+          /* 저장소를 못 쓰면 이번 방문 기준으로 시작한다 */
+        }
+        setStartedAt(started);
+        setNow(Date.now());
       })
       .catch((err) => setError(err.message));
   }, [userId]);
 
-  useEffect(() => {
-    if (secondsLeft === null || secondsLeft <= 0) return;
-    const t = setInterval(() => setSecondsLeft((s) => (s !== null ? Math.max(0, s - 1) : s)), 1000);
-    return () => clearInterval(t);
-  }, [secondsLeft]);
+  const allDone = !!quiz && quiz.problems.length > 0 && quiz.problems.every((p) => p.alreadySubmitted || results[p.id]);
 
-  const timeUp = secondsLeft === 0;
-  const mmss = useMemo(() => {
-    if (secondsLeft === null) return "--:--";
-    const m = Math.floor(secondsLeft / 60);
-    const s = secondsLeft % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  }, [secondsLeft]);
+  const duration = quiz?.durationSeconds ?? 0;
+  const elapsed =
+    startedAt === null ? 0 : Math.max(0, Math.floor(((finishedAt ?? now) - startedAt) / 1000));
+  const secondsLeft = Math.max(0, duration - elapsed);
+  const timeUp = !!quiz && startedAt !== null && !allDone && secondsLeft === 0;
+  const ended = allDone || timeUp;
+
+  useEffect(() => {
+    if (!quiz || ended) return;
+    const t = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(t);
+  }, [quiz, ended]);
+
+  const correctCount = useMemo(
+    () =>
+      quiz?.problems.filter((p) => (results[p.id] ? results[p.id].isCorrect : p.alreadySubmitted && p.submittedCorrect)).length ?? 0,
+    [quiz, results],
+  );
 
   async function submit(problem: QuizProblem, answer: SubmittedAnswer) {
-    if (!quiz || timeUp || submitting) return;
+    if (!quiz || ended || submitting) return;
     setSubmitting(problem.id);
     try {
       const res = await fetch("/api/daily-quiz/submit", {
@@ -74,12 +104,15 @@ export default function QuizPage() {
           dailyQuizId: quiz.id,
           contentId: problem.id,
           answer,
-          timeTakenMs: (quiz.durationSeconds - (secondsLeft ?? 0)) * 1000,
+          timeTakenMs: Math.max(0, (now - (startedAt ?? now))),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "제출에 실패했습니다.");
-      setResults((r) => ({ ...r, [problem.id]: data }));
+      const nextResults = { ...results, [problem.id]: data as SubmitResult };
+      setResults(nextResults);
+      // 마지막 문제까지 제출하면 그 시점에 러시를 끝내고 시간을 멈춘다.
+      if (quiz.problems.every((p) => p.alreadySubmitted || nextResults[p.id])) setFinishedAt(now);
     } catch (err) {
       setError(err instanceof Error ? err.message : "제출에 실패했습니다.");
     } finally {
@@ -96,19 +129,33 @@ export default function QuizPage() {
         </div>
         <span
           className={`font-mono text-4xl font-bold tabular-nums ${timeUp ? "text-danger" : ""}`}
-          aria-label="남은 시간"
+          aria-label={ended ? "러시 종료" : "남은 시간"}
         >
-          {timeUp ? "종료" : mmss}
+          {!quiz || startedAt === null ? "--:--" : allDone ? (finishedAt === null ? "완료" : mmss(elapsed)) : timeUp ? "종료" : mmss(secondsLeft)}
         </span>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
       {!quiz && !error && <p className="meta">불러오는 중</p>}
 
+      {quiz && ended && (
+        <section className="border border-foreground bg-accent-soft p-5" role="status">
+          <p className="meta mb-1">{allDone ? "러시 종료" : "시간 종료"}</p>
+          <p className="font-serif text-2xl font-bold">
+            {quiz.problems.length}문제 중 {correctCount}문제 정답
+          </p>
+          <p className="mt-1 text-sm">
+            {allDone
+              ? `모든 문제를 제출했습니다.${finishedAt === null ? "" : ` 소요 시간 ${mmss(elapsed)}`}${correctCount === quiz.problems.length ? " / 전부 정답" : ""}`
+              : "제한 시간이 지나 남은 문제는 제출할 수 없습니다."}
+          </p>
+        </section>
+      )}
+
       <div className="flex flex-col gap-5">
         {quiz?.problems.map((problem) => {
           const result = results[problem.id];
-          const locked = problem.alreadySubmitted || !!result || timeUp;
+          const locked = problem.alreadySubmitted || !!result || ended;
           return (
             <section key={problem.id} className="card p-5">
               <p className="meta mb-1">문제 {problem.order}</p>
@@ -130,7 +177,11 @@ export default function QuizPage() {
                   <span className="text-muted">{result.message}</span>
                 </p>
               )}
-              {problem.alreadySubmitted && !result && <p className="meta mt-3">제출 완료</p>}
+              {problem.alreadySubmitted && !result && (
+                <p className="meta mt-3">
+                  제출 완료{problem.submittedCorrect === null ? "" : problem.submittedCorrect ? " / 정답" : " / 오답"}
+                </p>
+              )}
             </section>
           );
         })}

@@ -40,7 +40,7 @@ export default async function MyLibraryPage({ searchParams }: { searchParams: Pr
             summary: true,
             difficulty: true,
             estimatedSeconds: true,
-            isShort: true,
+            inShorts: true,
             categories: { select: { category: { select: { name: true } } } },
             author: { select: { id: true, displayName: true } },
             _count: { select: { likes: true } },

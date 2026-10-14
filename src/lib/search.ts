@@ -1,4 +1,4 @@
-import { ContentStatus } from "@prisma/client";
+import { PUBLICLY_LISTED } from "@/lib/content/access";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -12,7 +12,7 @@ export async function searchContent(rawQuery: string, limit = 30) {
 
   return prisma.content.findMany({
     where: {
-      status: ContentStatus.PUBLISHED,
+      ...PUBLICLY_LISTED,
       OR: [
         { title: { contains: q, mode: "insensitive" } },
         { summary: { contains: q, mode: "insensitive" } },
@@ -31,6 +31,7 @@ export async function searchContent(rawQuery: string, limit = 30) {
       summary: true,
       difficulty: true,
       estimatedSeconds: true,
+      inShorts: true,
       categories: { select: { category: { select: { name: true } } } },
       author: { select: { id: true, displayName: true } },
       _count: { select: { likes: true } },
@@ -46,7 +47,7 @@ export async function searchCreators(rawQuery: string, limit = 10) {
   return prisma.user.findMany({
     where: {
       displayName: { contains: q, mode: "insensitive" },
-      authoredContent: { some: { status: ContentStatus.PUBLISHED } },
+      authoredContent: { some: PUBLICLY_LISTED },
     },
     orderBy: { subscribers: { _count: "desc" } },
     take: limit,
@@ -56,7 +57,7 @@ export async function searchCreators(rawQuery: string, limit = 10) {
       _count: {
         select: {
           subscribers: true,
-          authoredContent: { where: { status: ContentStatus.PUBLISHED } },
+          authoredContent: { where: PUBLICLY_LISTED },
         },
       },
     },

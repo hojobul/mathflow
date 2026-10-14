@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { PUBLICLY_LISTED } from "@/lib/content/access";
 import { ContentCard, TYPE_LABEL } from "@/components/content/ContentCard";
 
 export const dynamic = "force-dynamic"; // 항상 최신 발행 상태를 보여준다
@@ -11,7 +12,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   const active = FILTERS.find((f) => f === type) ?? "ALL";
 
   const items = await prisma.content.findMany({
-    where: { status: "PUBLISHED", ...(active !== "ALL" ? { type: active } : {}) },
+    where: { ...PUBLICLY_LISTED, ...(active !== "ALL" ? { type: active } : {}) },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -20,7 +21,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       summary: true,
       difficulty: true,
       estimatedSeconds: true,
-      isShort: true,
+      inShorts: true,
       categories: { select: { category: { select: { name: true } } } },
       author: { select: { id: true, displayName: true } },
       _count: { select: { likes: true } },

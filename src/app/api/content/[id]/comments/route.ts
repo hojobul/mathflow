@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { canViewContent } from "@/lib/content/access";
 import { getSessionAppUser } from "@/lib/auth/currentUser";
 
 /** GET /api/content/:id/comments — oldest first (thread reading order). */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: contentId } = await params;
+  if (!(await canViewContent(contentId))) return NextResponse.json({ comments: [] });
   const comments = await prisma.comment.findMany({
     where: { contentId },
     orderBy: { createdAt: "asc" },
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const content = await prisma.content.findUnique({ where: { id: contentId }, select: { id: true } });
+  const content = (await canViewContent(contentId)) ? { id: contentId } : null;
   if (!content) {
     return NextResponse.json({ error: "content not found" }, { status: 404 });
   }

@@ -10,7 +10,7 @@ export interface FeedContentItem {
   body: ContentBody;
   difficulty: number;
   estimatedSeconds: number;
-  isShort: boolean;
+  inShorts: boolean;
   widgetConfig: unknown;
   latexExpressions: string[];
   categories: { slug: string; name: string }[];

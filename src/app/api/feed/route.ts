@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       difficulty: true,
       estimatedSeconds: true,
       widgetConfig: true,
-      isShort: true,
+      inShorts: true,
       answerKey: true, // only ever reduced to a public spec below — never returned
       latexExpressions: true,
       categories: { select: { category: { select: { slug: true, name: true } } } },

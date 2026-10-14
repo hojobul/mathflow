@@ -182,7 +182,8 @@ async function main() {
     data: {
       id: "seed-short-sum",
       type: ContentType.PROBLEM,
-      isShort: true,
+      inFeed: false,
+      inShorts: true,
       title: "1부터 100까지의 합",
       body: {
         blocks: [
@@ -210,7 +211,8 @@ async function main() {
     data: {
       id: "seed-short-prime",
       type: ContentType.PROBLEM,
-      isShort: true,
+      inFeed: false,
+      inShorts: true,
       title: "소수 고르기",
       body: {
         blocks: [{ id: "b1", kind: "text", text: "다음 중 소수인 것은?" }],
@@ -242,7 +244,8 @@ async function main() {
     data: {
       id: "seed-short-ramanujan",
       type: ContentType.ANECDOTE,
-      isShort: true,
+      inFeed: false,
+      inShorts: true,
       title: "1729번 택시",
       body: {
         blocks: [

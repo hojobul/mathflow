@@ -70,6 +70,13 @@ enum ContentStatus {
   ARCHIVED
 }
 
+// 공개 범위: PUBLIC은 피드·검색·탐색에 노출, UNLISTED는 링크를 아는 사람만, PRIVATE는 작성자만.
+enum ContentVisibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
 model CategoryTag {
   id        String   @id @default(cuid())
   slug      String   @unique // e.g. "calculus", "geometry", "number-theory"
@@ -100,8 +107,11 @@ model Content {
   title   String
   summary String?
 
-  // 쇼츠: 60초 이내의 짧은 콘텐츠. /shorts 세로 피드에만 노출되고 일반 피드에서는 제외된다.
-  isShort Boolean @default(false)
+  visibility ContentVisibility @default(PUBLIC)
+
+  // 노출 위치: 일반 피드와 쇼츠 탭에 각각 낼 수 있다(둘 다 가능). 쇼츠에 내려면 길이 제한을 지켜야 한다.
+  inFeed   Boolean @default(true)
+  inShorts Boolean @default(false)
 
   // Block-based rich text body produced by the creator editor.
   // Shape: { blocks: Array<{ id, kind: "text"|"latex"|"image"|"widget", ... }> }
@@ -137,7 +147,8 @@ model Content {
   updatedAt DateTime @updatedAt
 
   @@index([type, status])
-  @@index([isShort, status])
+  @@index([inFeed, inShorts])
+  @@index([visibility, status])
   @@index([difficulty])
 }
 

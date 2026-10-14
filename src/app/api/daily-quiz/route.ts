@@ -28,16 +28,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "no daily quiz scheduled for today" }, { status: 404 });
   }
 
-  const submittedContentIds = userId
-    ? new Set(
-        (
-          await prisma.userSubmission.findMany({
-            where: { userId, dailyQuizId: quiz.id },
-            select: { contentId: true },
-          })
-        ).map((s) => s.contentId),
-      )
-    : new Set<string>();
+  const submissions = userId
+    ? await prisma.userSubmission.findMany({
+        where: { userId, dailyQuizId: quiz.id },
+        select: { contentId: true, isCorrect: true },
+      })
+    : [];
+  const submissionByContent = new Map(submissions.map((s) => [s.contentId, s.isCorrect]));
 
   return NextResponse.json({
     id: quiz.id,
@@ -51,7 +48,8 @@ export async function GET(req: NextRequest) {
       difficulty: p.content.difficulty,
       estimatedSeconds: p.content.estimatedSeconds,
       answerSpec: toPublicAnswerSpec(p.content.answerKey) ?? { kind: "numeric" },
-      alreadySubmitted: submittedContentIds.has(p.contentId),
+      alreadySubmitted: submissionByContent.has(p.contentId),
+      submittedCorrect: submissionByContent.get(p.contentId) ?? null,
     })),
   });
 }

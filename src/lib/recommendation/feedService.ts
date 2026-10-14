@@ -1,4 +1,4 @@
-import { ContentStatus } from "@prisma/client";
+import { PUBLICLY_LISTED } from "@/lib/content/access";
 import { prisma } from "@/lib/prisma";
 
 const SEEN_CONTENT_COOLDOWN_HOURS = 12;
@@ -45,8 +45,8 @@ export async function getPersonalizedFeed(
 
   const candidates = await prisma.content.findMany({
     where: {
-      status: ContentStatus.PUBLISHED,
-      isShort: options.format === "short",
+      ...PUBLICLY_LISTED,
+      ...(options.format === "short" ? { inShorts: true } : { inFeed: true }),
       id: { notIn: [...recentlySeenIds] },
     },
     include: { categories: { select: { categoryId: true } } },
