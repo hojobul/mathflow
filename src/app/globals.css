@@ -1,39 +1,39 @@
 @import "tailwindcss";
 
-/* ── MathFlow design tokens ─────────────────────────────────────────────
-   Indigo accent on a soft, slightly warm neutral base. Every color the UI
-   uses comes from these variables, so light/dark is one swap, below. */
+/* ── MathFlow: 수학 공책 / 교정지 ────────────────────────────────────────
+   종이색 바탕, 먹색 잉크, 형광펜 노랑(강조), 빨간 펜(오답)·초록(정답).
+   그림자·그라디언트·큰 둥근 모서리는 쓰지 않는다. 색은 전부 아래 변수에서 나온다. */
 :root {
-  --background: #f7f7fb;
-  --foreground: #14142b;
-  --surface: #ffffff;
-  --surface-2: #f0f0f8;
-  --line: #e4e4ef;
-  --line-strong: #c9c9dd;
-  --muted: #6b6b86;
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-soft: #eceafd;
-  --accent-ink: #ffffff;
-  --success: #15803d;
-  --danger: #dc2626;
+  --background: #f2efe6; /* 종이 */
+  --foreground: #1c1b17; /* 잉크 */
+  --surface: #faf8f2; /* 입력·카드 바탕 */
+  --surface-2: #e8e4d8; /* 한 단계 어두운 종이 */
+  --line: #d3cebf; /* 가는 선 */
+  --line-strong: #8f8a7b;
+  --muted: #6a675c;
+  --accent: #1c1b17; /* 선택·강조 테두리 = 잉크 */
+  --accent-soft: #f1e08a; /* 형광펜 */
+  --accent-ink: #faf8f2;
+  --hl: #f1e08a;
+  --success: #25693a;
+  --danger: #b3261e; /* 빨간 펜 */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0e0e1a;
-    --foreground: #ececf6;
-    --surface: #16162a;
-    --surface-2: #1e1e36;
-    --line: #2a2a45;
-    --line-strong: #3c3c5e;
-    --muted: #9a9ab8;
-    --accent: #8b85f5;
-    --accent-hover: #a29df8;
-    --accent-soft: #25235a;
-    --accent-ink: #0e0e1a;
-    --success: #4ade80;
-    --danger: #f87171;
+    --background: #151410;
+    --foreground: #ebe7da;
+    --surface: #1d1c17;
+    --surface-2: #26241d;
+    --line: #34312a;
+    --line-strong: #6c6859;
+    --muted: #9d998b;
+    --accent: #ebe7da;
+    --accent-soft: #5a4f12;
+    --accent-ink: #151410;
+    --hl: #6b5d12;
+    --success: #7ccb8a;
+    --danger: #f0786b;
   }
 }
 
@@ -49,8 +49,17 @@
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
   --color-danger: var(--danger);
-  --font-sans: var(--font-noto-sans-kr), var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --font-serif: var(--font-noto-serif-kr), "Noto Serif KR", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* 모서리는 거의 직각 */
+  --radius-xs: 0px;
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
 }
 
 body {
@@ -60,30 +69,73 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--hl);
+  color: var(--foreground);
+}
+
 @layer components {
   .page {
-    @apply mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-5 py-8;
+    @apply mx-auto flex w-full max-w-3xl flex-1 flex-col gap-7 px-5 py-10;
   }
   .page-title {
-    @apply text-2xl font-bold tracking-tight;
+    @apply font-serif text-3xl font-bold leading-tight tracking-tight;
+  }
+  /* 신문·교재처럼 굵은 위선으로 구획을 나눈다 */
+  .section-label {
+    @apply border-t-2 border-foreground pt-2 text-xs font-bold tracking-wide;
   }
   .card {
-    @apply rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgb(20_20_43/0.04)];
+    @apply border border-line bg-surface;
   }
   .card-hover {
-    @apply transition-all hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_6px_20px_rgb(20_20_43/0.08)];
+    @apply transition-colors hover:border-foreground;
+  }
+  .row-link {
+    @apply block border-b border-line py-4 transition-colors hover:bg-accent-soft/40;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2 text-sm font-semibold transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex h-9 items-center justify-center gap-1.5 border border-foreground bg-foreground px-4 text-sm font-semibold transition-colors hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-foreground;
     color: var(--accent-ink);
   }
+  .btn-primary:hover:not(:disabled) {
+    color: var(--foreground);
+  }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-xl border border-line px-4 py-2 text-sm font-medium transition-colors hover:border-line-strong hover:bg-surface-2;
+    @apply inline-flex h-9 items-center justify-center gap-1.5 border border-foreground px-4 text-sm font-semibold transition-colors hover:bg-foreground disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--accent-ink);
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-sm transition-colors hover:border-line-strong hover:bg-surface-2 disabled:opacity-50;
+    @apply inline-flex h-8 items-center gap-1.5 border border-line-strong px-3 text-sm transition-colors hover:border-foreground disabled:opacity-50;
   }
   .chip-active {
-    @apply border-accent bg-accent-soft font-semibold text-accent;
+    @apply border-foreground bg-foreground font-semibold;
+    color: var(--accent-ink);
   }
+  .tag {
+    @apply inline-flex h-5 items-center border border-foreground px-1.5 text-[11px] font-bold leading-none;
+  }
+  .meta {
+    @apply font-mono text-xs tabular-nums text-muted;
+  }
+  /* 형광펜 */
+  .hl {
+    background: linear-gradient(transparent 58%, var(--hl) 58%);
+  }
+  .field {
+    @apply w-full border border-line-strong bg-surface px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted focus:border-foreground;
+  }
+}
+
+/* 쇼츠 본문은 한 화면에서 읽으므로 글자를 키운다 */
+.short-body p {
+  font-size: 1.125rem;
+  line-height: 2rem;
 }

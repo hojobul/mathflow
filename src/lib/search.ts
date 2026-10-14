@@ -37,3 +37,28 @@ export async function searchContent(rawQuery: string, limit = 30) {
     },
   });
 }
+
+/** 채널(크리에이터) 검색: 이름 부분 일치, 발행한 콘텐츠가 1개 이상인 사용자만. */
+export async function searchCreators(rawQuery: string, limit = 10) {
+  const q = rawQuery.trim().replace(/^@/, "").slice(0, 60);
+  if (!q) return [];
+
+  return prisma.user.findMany({
+    where: {
+      displayName: { contains: q, mode: "insensitive" },
+      authoredContent: { some: { status: ContentStatus.PUBLISHED } },
+    },
+    orderBy: { subscribers: { _count: "desc" } },
+    take: limit,
+    select: {
+      id: true,
+      displayName: true,
+      _count: {
+        select: {
+          subscribers: true,
+          authoredContent: { where: { status: ContentStatus.PUBLISHED } },
+        },
+      },
+    },
+  });
+}

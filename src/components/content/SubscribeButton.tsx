@@ -3,28 +3,28 @@
 import { useState } from "react";
 import { useSession } from "@/lib/auth/client";
 import { useEffectiveUser } from "@/lib/auth/useEffectiveUser";
+import { requestLogin } from "@/lib/auth/requestLogin";
 
 interface SubscribeButtonProps {
   creatorId: string;
   initialSubscribed: boolean;
   initialCount: number;
+  compact?: boolean;
 }
 
-export function SubscribeButton({ creatorId, initialSubscribed, initialCount }: SubscribeButtonProps) {
+export function SubscribeButton({ creatorId, initialSubscribed, initialCount, compact }: SubscribeButtonProps) {
   const { data: session } = useSession();
   const { id: effectiveUserId } = useEffectiveUser();
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [count, setCount] = useState(initialCount);
   const [pending, setPending] = useState(false);
 
-  if (effectiveUserId === creatorId) return null; // no self-subscribe UI
+  if (effectiveUserId === creatorId) return null;
 
   async function toggle() {
-    if (!session?.user) {
-      alert("구독은 로그인 후 이용할 수 있어요.");
-      return;
-    }
+    if (!session?.user) return requestLogin();
     setPending(true);
+    const prev = { subscribed, count };
     setSubscribed(!subscribed);
     setCount((c) => c + (subscribed ? -1 : 1));
     try {
@@ -34,8 +34,8 @@ export function SubscribeButton({ creatorId, initialSubscribed, initialCount }: 
       setSubscribed(data.subscribed);
       setCount(data.subscriberCount);
     } catch {
-      setSubscribed(subscribed);
-      setCount((c) => c + (subscribed ? 1 : -1));
+      setSubscribed(prev.subscribed);
+      setCount(prev.count);
     } finally {
       setPending(false);
     }
@@ -46,9 +46,10 @@ export function SubscribeButton({ creatorId, initialSubscribed, initialCount }: 
       type="button"
       onClick={toggle}
       disabled={pending}
-      className={subscribed ? "chip" : "btn-primary rounded-full"}
+      className={`${subscribed ? "btn-ghost" : "btn-primary"} ${compact ? "!h-7 !px-2.5 text-xs" : ""}`}
     >
-      {subscribed ? `구독 중 · ${count}` : `구독 · ${count}`}
+      {subscribed ? "구독중" : "구독"}
+      <span className="font-mono font-normal tabular-nums">{count}</span>
     </button>
   );
 }

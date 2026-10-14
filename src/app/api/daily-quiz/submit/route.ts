@@ -56,6 +56,6 @@ async function problemCorrectRate(dailyQuizId: string, contentId: string) {
   const percentCorrect = total > 0 ? Math.round((correct / total) * 100) : 100;
   return {
     percentCorrect,
-    message: `상위 ${Math.max(1, percentCorrect)}%만 맞힌 문제`,
+    message: percentCorrect <= 50 ? `상위 ${Math.max(1, percentCorrect)}%만 맞힌 문제` : `정답률 ${percentCorrect}%`,
   };
 }

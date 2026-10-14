@@ -6,7 +6,7 @@ import { ContentCard } from "@/components/content/ContentCard";
 
 export const dynamic = "force-dynamic";
 
-/** 크리에이터 채널 페이지 — 유튜브 채널처럼: 프로필 + 구독 + 업로드 목록. */
+/** 채널 페이지: 프로필, 구독, 올린 콘텐츠 목록. */
 export default async function CreatorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -16,7 +16,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
       select: {
         id: true,
         displayName: true,
-        avatarUrl: true,
         createdAt: true,
         authoredContent: {
           where: { status: "PUBLISHED" },
@@ -28,6 +27,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
             summary: true,
             difficulty: true,
             estimatedSeconds: true,
+            isShort: true,
             createdAt: true,
             categories: { select: { category: { select: { name: true } } } },
             _count: { select: { likes: true } },
@@ -48,35 +48,35 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
       : null,
   ]);
 
+  const shortCount = creator.authoredContent.filter((c) => c.isShort).length;
+
   return (
     <main className="page">
-      <div className="card overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] opacity-90" />
-        <div className="flex flex-wrap items-center gap-4 px-5 pb-5">
-          <div
-            className="-mt-8 flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-accent text-3xl font-bold"
-            style={{ color: "var(--accent-ink)" }}
-          >
-            {creator.displayName.slice(0, 1).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1 pt-2">
-            <h1 className="truncate text-xl font-bold">{creator.displayName}</h1>
-            <p className="text-sm text-muted">
-              구독자 {subscriberCount}명 · 콘텐츠 {creator.authoredContent.length}개
-            </p>
-          </div>
-          <SubscribeButton creatorId={creator.id} initialSubscribed={!!subscribedByViewer} initialCount={subscriberCount} />
+      <header className="flex flex-wrap items-end gap-5 border-b-2 border-foreground pb-5">
+        <div
+          className="flex h-20 w-20 shrink-0 items-center justify-center bg-foreground font-serif text-4xl font-bold"
+          style={{ color: "var(--accent-ink)" }}
+        >
+          {creator.displayName.slice(0, 1).toUpperCase()}
         </div>
-      </div>
+        <div className="min-w-0 flex-1">
+          <h1 className="page-title truncate">{creator.displayName}</h1>
+          <p className="meta mt-1">
+            구독자 {subscriberCount} / 콘텐츠 {creator.authoredContent.length} / 쇼츠 {shortCount} / 가입{" "}
+            {creator.createdAt.toLocaleDateString("ko-KR")}
+          </p>
+        </div>
+        <SubscribeButton creatorId={creator.id} initialSubscribed={!!subscribedByViewer} initialCount={subscriberCount} />
+      </header>
 
-      <h2 className="font-semibold">업로드한 콘텐츠</h2>
-      <div className="flex flex-col gap-3">
+      <section>
+        <h2 className="mb-1 text-xs font-bold tracking-wide">업로드</h2>
         {creator.authoredContent.length === 0 ? (
-          <p className="text-sm text-muted">아직 발행한 콘텐츠가 없어요.</p>
+          <p className="py-4 text-sm text-muted">발행한 콘텐츠 없음</p>
         ) : (
           creator.authoredContent.map((item) => <ContentCard key={item.id} item={item} />)
         )}
-      </div>
+      </section>
     </main>
   );
 }

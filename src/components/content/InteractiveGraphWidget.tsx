@@ -68,12 +68,12 @@ export function InteractiveGraphWidget({ config, onInteract }: InteractiveGraphW
 
   return (
     <div className="card flex flex-col gap-3 p-4">
-      <div className="rounded bg-surface-2 px-2 py-1 font-mono text-xs text-muted">
+      <div className="bg-surface-2 px-2 py-1 font-mono text-xs">
         y = {config.expression}
       </div>
 
       {evalError ? (
-        <p className="text-xs text-danger">수식을 계산할 수 없어요: {evalError}</p>
+        <p className="text-xs text-danger">계산 불가: {evalError}</p>
       ) : (
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full max-w-xs self-center" role="img" aria-label="함수 그래프">
           <rect x={0} y={0} width={WIDTH} height={HEIGHT} className="fill-none" />
@@ -85,10 +85,10 @@ export function InteractiveGraphWidget({ config, onInteract }: InteractiveGraphW
           )}
           <path
             d={pathD}
-            className="fill-none stroke-accent"
+            className="fill-none stroke-foreground"
             strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            strokeLinecap="square"
+            strokeLinejoin="miter"
           />
         </svg>
       )}
@@ -109,7 +109,7 @@ export function InteractiveGraphWidget({ config, onInteract }: InteractiveGraphW
                 setValues((v) => ({ ...v, [name]: Number(e.target.value) }));
                 onInteract?.();
               }}
-              className="flex-1"
+              className="flex-1 accent-[var(--foreground)]"
             />
           </label>
         ))}

@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ContentBodyView } from "@/components/content/ContentBodyView";
 import { StyleRadarChart } from "@/components/gamification/StyleRadarChart";
+import { AnswerInput } from "@/components/content/AnswerInput";
 import { useEffectiveUser } from "@/lib/auth/useEffectiveUser";
 import { useSession } from "@/lib/auth/client";
 import type { ContentBody } from "@/lib/content/blocks";
-import { AnswerInput } from "@/components/content/AnswerInput";
 import type { PublicAnswerSpec, SubmittedAnswer } from "@/lib/grading";
 
 interface QuizProblem {
@@ -40,7 +40,7 @@ export default function QuizPage() {
   useEffect(() => {
     if (!userId) return;
     fetch(`/api/daily-quiz?userId=${userId}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`불러오기 실패 (${res.status})`))))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(res.status === 404 ? "오늘의 퀴즈가 아직 없습니다." : `불러오기 실패 (${res.status})`))))
       .then((data) => {
         setQuiz(data);
         setSecondsLeft(data.durationSeconds);
@@ -78,10 +78,10 @@ export default function QuizPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "제출 실패");
+      if (!res.ok) throw new Error(data?.error ?? "제출에 실패했습니다.");
       setResults((r) => ({ ...r, [problem.id]: data }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "제출 실패");
+      setError(err instanceof Error ? err.message : "제출에 실패했습니다.");
     } finally {
       setSubmitting(null);
     }
@@ -89,29 +89,32 @@ export default function QuizPage() {
 
   return (
     <main className="page max-w-2xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{quiz?.title ?? "오늘의 Math Rush"}</h1>
+      <div className="flex items-end justify-between gap-4 border-b-2 border-foreground pb-3">
+        <div>
+          <p className="meta">Daily Math Rush</p>
+          <h1 className="page-title">{quiz?.title ?? "오늘의 퀴즈"}</h1>
+        </div>
         <span
-          className={`rounded-full px-3 py-1 text-sm font-mono tabular-nums ${
-            timeUp ? "bg-red-500/10 text-danger" : "bg-surface-2"
-          }`}
+          className={`font-mono text-4xl font-bold tabular-nums ${timeUp ? "text-danger" : ""}`}
+          aria-label="남은 시간"
         >
           {timeUp ? "종료" : mmss}
         </span>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      {!quiz && !error && <p className="text-sm text-muted">불러오는 중…</p>}
+      {!quiz && !error && <p className="meta">불러오는 중</p>}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         {quiz?.problems.map((problem) => {
           const result = results[problem.id];
           const locked = problem.alreadySubmitted || !!result || timeUp;
           return (
-            <div key={problem.id} className="card p-5">
-              <h2 className="mb-2 font-medium">{problem.title}</h2>
+            <section key={problem.id} className="card p-5">
+              <p className="meta mb-1">문제 {problem.order}</p>
+              <h2 className="mb-3 font-serif text-lg font-bold">{problem.title}</h2>
               <ContentBodyView body={problem.body} />
-              <div className="mt-3">
+              <div className="mt-4">
                 <AnswerInput
                   spec={problem.answerSpec}
                   disabled={locked}
@@ -120,22 +123,22 @@ export default function QuizPage() {
                 />
               </div>
               {result && (
-                <p className={`mt-2 text-sm font-medium ${result.isCorrect ? "text-success" : "text-danger"}`}>
-                  {result.isCorrect ? "정답! " : "오답. "}
-                  {result.message}
+                <p className="mt-3 text-sm">
+                  <strong className={result.isCorrect ? "text-success" : "text-danger"}>
+                    {result.isCorrect ? "정답입니다." : "오답입니다."}
+                  </strong>{" "}
+                  <span className="text-muted">{result.message}</span>
                 </p>
               )}
-              {problem.alreadySubmitted && !result && (
-                <p className="mt-2 text-sm text-muted">이미 제출한 문제예요.</p>
-              )}
-            </div>
+              {problem.alreadySubmitted && !result && <p className="meta mt-3">제출 완료</p>}
+            </section>
           );
         })}
       </div>
 
       {session?.user && (
-        <section className="flex flex-col items-center gap-2 card p-5">
-          <h2 className="text-sm font-medium">나의 수학 스타일</h2>
+        <section className="card flex flex-col items-center gap-3 p-5">
+          <h2 className="self-start text-xs font-bold tracking-wide">수학 스타일</h2>
           <StyleRadar />
         </section>
       )}
@@ -160,7 +163,7 @@ function StyleRadar() {
 
   if (!style) return null;
   if (!style.hasActivity) {
-    return <p className="text-xs text-muted">아직 활동 데이터가 부족해요 — 콘텐츠를 더 둘러보세요.</p>;
+    return <p className="text-sm text-muted">기록이 부족합니다. 콘텐츠를 더 읽으면 표시됩니다.</p>;
   }
   return <StyleRadarChart {...style} />;
 }

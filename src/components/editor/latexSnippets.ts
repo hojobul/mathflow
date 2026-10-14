@@ -36,8 +36,8 @@ export const LATEX_SNIPPET_GROUPS: LatexSnippetGroup[] = [
   {
     title: "구조",
     snippets: [
-      { label: "\\begin{matrix}", insert: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", cursorOffset: 15 },
-      { label: "\\begin{cases}", insert: "\\begin{cases} x, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}", cursorOffset: 13 },
+      { label: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", insert: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", cursorOffset: 15 },
+      { label: "\\begin{cases} x & x \\geq 0 \\\\ -x & x < 0 \\end{cases}", insert: "\\begin{cases} x, & x \\geq 0 \\\\ -x, & x < 0 \\end{cases}", cursorOffset: 13 },
     ],
   },
   {

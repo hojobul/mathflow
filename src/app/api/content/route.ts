@@ -6,6 +6,10 @@ import {
   extractLatexExpressions,
   extractSearchText,
   MAX_LATEX_SOURCE_LENGTH,
+  SHORT_MAX_BLOCKS,
+  SHORT_MAX_SECONDS,
+  SHORT_MAX_TEXT_CHARS,
+  bodyTextLength,
   type ContentBody,
 } from "@/lib/content/blocks";
 import { getSessionAppUser } from "@/lib/auth/currentUser";
@@ -54,6 +58,7 @@ const CreateContentBody = z.object({
   estimatedSeconds: z.number().int().min(10).max(3600),
   categories: z.array(z.string().min(1)).max(5).default([]),
   body: z.object({ blocks: z.array(ContentBlockSchema).min(1) }),
+  isShort: z.boolean().default(false),
   answer: AnswerSchema.optional(),
   hints: z.array(HintDraftSchema).max(10).optional(),
 });
@@ -110,12 +115,18 @@ export async function POST(req: NextRequest) {
   const input = parsed.data;
   const body = input.body as ContentBody;
 
+  if (input.isShort) {
+    const shortError = validateShort(body, input.estimatedSeconds);
+    if (shortError) return NextResponse.json({ error: shortError }, { status: 400 });
+  }
+
   const categoryIds = await resolveCategoryIds(input.categories);
 
   const content = await prisma.content.create({
     data: {
       type: input.type,
       status: ContentStatus.PUBLISHED,
+      isShort: input.isShort,
       title: input.title,
       summary: input.summary,
       body: body as unknown as Prisma.InputJsonValue,
@@ -183,4 +194,12 @@ function buildAnswerKey(answer: z.infer<typeof AnswerSchema> | undefined): Prism
   if (answer.kind === "expression") return { kind: "expression", normalized: normalizeExpression(answer.raw) };
   if (answer.kind === "choice" && !answer.options.some((o) => o.id === answer.correctOptionId)) return undefined;
   return answer as unknown as Prisma.InputJsonValue;
+}
+
+function validateShort(body: ContentBody, estimatedSeconds: number): string | null {
+  const textChars = bodyTextLength(body);
+  if (textChars > SHORT_MAX_TEXT_CHARS) return `쇼츠 본문은 ${SHORT_MAX_TEXT_CHARS}자까지 가능합니다 (현재 ${textChars}자)`;
+  if (estimatedSeconds > SHORT_MAX_SECONDS) return `쇼츠는 예상 소요 시간이 ${SHORT_MAX_SECONDS}초 이하여야 합니다`;
+  if (body.blocks.length > SHORT_MAX_BLOCKS) return `쇼츠는 블록 ${SHORT_MAX_BLOCKS}개까지 가능합니다`;
+  return null;
 }

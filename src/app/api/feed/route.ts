@@ -17,8 +17,9 @@ export async function GET(req: NextRequest) {
   const limitParam = req.nextUrl.searchParams.get("limit");
   const limit = limitParam ? Math.min(50, Math.max(1, Number(limitParam))) : undefined;
   const cursor = req.nextUrl.searchParams.get("cursor") ?? undefined;
+  const format = req.nextUrl.searchParams.get("format") === "short" ? "short" : "long";
 
-  const { items, nextCursor } = await getPersonalizedFeed(userId, { limit, cursor });
+  const { items, nextCursor } = await getPersonalizedFeed(userId, { limit, cursor, format });
   if (items.length === 0) {
     return NextResponse.json({ items: [], nextCursor: null });
   }
@@ -34,12 +35,13 @@ export async function GET(req: NextRequest) {
       difficulty: true,
       estimatedSeconds: true,
       widgetConfig: true,
+      isShort: true,
       answerKey: true, // only ever reduced to a public spec below — never returned
       latexExpressions: true,
       categories: { select: { category: { select: { slug: true, name: true } } } },
       hints: { select: { id: true, order: true, label: true, isFullSolution: true } },
       author: { select: { id: true, displayName: true, avatarUrl: true } },
-      _count: { select: { likes: true } },
+      _count: { select: { likes: true, comments: true } },
     },
   });
   const byId = new Map(contents.map((c) => [c.id, c]));
@@ -49,8 +51,12 @@ export async function GET(req: NextRequest) {
   // publish-path latency work has shown how much N sequential round trips
   // costs on a remote DB.
   const authorIds = [...new Set(contents.map((c) => c.author?.id).filter((id): id is string => !!id))];
-  const [likedRows, subscribedRows, subscriberCounts] = await Promise.all([
+  const [likedRows, savedRows, subscribedRows, subscriberCounts] = await Promise.all([
     prisma.like.findMany({ where: { userId, contentId: { in: [...byId.keys()] } }, select: { contentId: true } }),
+    prisma.libraryEntry.findMany({
+      where: { userId, type: "SCRAP", contentId: { in: [...byId.keys()] } },
+      select: { contentId: true },
+    }),
     authorIds.length
       ? prisma.subscription.findMany({
           where: { subscriberId: userId, creatorId: { in: authorIds } },
@@ -62,6 +68,7 @@ export async function GET(req: NextRequest) {
       : Promise.resolve([]),
   ]);
   const likedContentIds = new Set(likedRows.map((r) => r.contentId));
+  const savedContentIds = new Set(savedRows.map((r) => r.contentId));
   const subscribedCreatorIds = new Set(subscribedRows.map((r) => r.creatorId));
   const subscriberCountByCreator = new Map(subscriberCounts.map((r) => [r.creatorId, r._count]));
 
@@ -80,6 +87,7 @@ export async function GET(req: NextRequest) {
         answerSpec: toPublicAnswerSpec(answerKey),
         rankScore: item.rankScore,
         likedByViewer: likedContentIds.has(item.contentId),
+        savedByViewer: savedContentIds.has(item.contentId),
         subscribedByViewer: content.author ? subscribedCreatorIds.has(content.author.id) : false,
         subscriberCount: content.author ? (subscriberCountByCreator.get(content.author.id) ?? 0) : 0,
       };

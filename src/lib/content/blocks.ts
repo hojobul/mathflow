@@ -38,3 +38,12 @@ export function extractSearchText(body: ContentBody): string {
     .join(" ")
     .trim();
 }
+
+// 쇼츠 제한 — 에디터(client)와 /api/content(server)가 같은 값을 쓴다.
+export const SHORT_MAX_TEXT_CHARS = 280;
+export const SHORT_MAX_SECONDS = 60;
+export const SHORT_MAX_BLOCKS = 6;
+
+export function bodyTextLength(body: ContentBody): number {
+  return body.blocks.reduce((n, b) => n + (b.kind === "text" ? b.text.length : 0), 0);
+}

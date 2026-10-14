@@ -10,15 +10,17 @@ export interface FeedContentItem {
   body: ContentBody;
   difficulty: number;
   estimatedSeconds: number;
+  isShort: boolean;
   widgetConfig: unknown;
   latexExpressions: string[];
   categories: { slug: string; name: string }[];
   hints: { id: string; order: number; label: string; isFullSolution: boolean }[];
   author: { id: string; displayName: string; avatarUrl: string | null } | null;
-  _count: { likes: number };
+  _count: { likes: number; comments: number };
   answerSpec: PublicAnswerSpec | null;
   rankScore: number;
   likedByViewer: boolean;
+  savedByViewer: boolean;
   subscribedByViewer: boolean;
   subscriberCount: number;
 }

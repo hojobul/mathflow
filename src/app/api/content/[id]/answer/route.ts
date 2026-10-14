@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     prisma.content.findUnique({ where: { id: contentId }, select: { answerKey: true } }),
   ]);
   if (!content || content.answerKey === null) {
-    return NextResponse.json({ error: "채점할 수 없는 콘텐츠예요" }, { status: 404 });
+    return NextResponse.json({ error: "채점 대상이 아닌 콘텐츠입니다" }, { status: 404 });
   }
   const user = sessionUser ?? (await getOrCreateGuestUser());
 

@@ -16,7 +16,16 @@ loadEnv({ path: path.join(__dirname, "..", ".env.local"), override: true });
 
 const prisma = new PrismaClient();
 
-const SEED_IDS = ["seed-quadratic", "seed-euler", "seed-parabola", "seed-pythagoras", "seed-fermat"];
+const SEED_IDS = [
+  "seed-quadratic",
+  "seed-euler",
+  "seed-parabola",
+  "seed-pythagoras",
+  "seed-fermat",
+  "seed-short-sum",
+  "seed-short-prime",
+  "seed-short-ramanujan",
+];
 
 async function main() {
   const [calculus, geometry, numberTheory] = await Promise.all(
@@ -168,25 +177,104 @@ async function main() {
     },
   });
 
-  const today = new Date();
-  const dateOnly = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-  await prisma.dailyQuiz.upsert({
-    where: { date: dateOnly },
-    create: {
-      date: dateOnly,
-      title: "오늘의 Math Rush",
-      durationSeconds: 180,
-      problems: {
+  // ── 쇼츠 (60초 이내) ──
+  await prisma.content.create({
+    data: {
+      id: "seed-short-sum",
+      type: ContentType.PROBLEM,
+      isShort: true,
+      title: "1부터 100까지의 합",
+      body: {
+        blocks: [
+          { id: "b1", kind: "text", text: "가우스가 열 살에 암산으로 풀었다는 문제. 합을 구하시오." },
+          { id: "b2", kind: "latex", source: "1 + 2 + 3 + \\cdots + 100", display: "block" },
+        ],
+      },
+      searchText: "가우스 등차수열 합 1+2+3+...+100",
+      latexExpressions: ["1 + 2 + 3 + \\cdots + 100"],
+      difficulty: 1,
+      estimatedSeconds: 30,
+      answerKey: { kind: "numeric", value: 5050, tolerance: 0 },
+      authorId: user.id,
+      categories: { create: [{ categoryId: numberTheory.id }] },
+      hints: {
         create: [
-          { order: 1, contentId: "seed-quadratic" },
-          { order: 2, contentId: "seed-pythagoras" },
+          { order: 1, label: "접근법", body: { blocks: [{ id: "h1", kind: "text", text: "첫 항과 끝 항, 둘째 항과 끝에서 둘째 항을 짝지어 보세요." }] } },
+          { order: 2, label: "풀이", isFullSolution: true, body: { blocks: [{ id: "h2", kind: "text", text: "101이 50쌍이므로 101 × 50 = 5050" }] } },
         ],
       },
     },
-    update: {},
   });
 
-  console.log(`Seed complete: ${SEED_IDS.length} content items + today's Daily Quiz.`);
+  await prisma.content.create({
+    data: {
+      id: "seed-short-prime",
+      type: ContentType.PROBLEM,
+      isShort: true,
+      title: "소수 고르기",
+      body: {
+        blocks: [{ id: "b1", kind: "text", text: "다음 중 소수인 것은?" }],
+      },
+      searchText: "소수 판별 객관식",
+      difficulty: 1,
+      estimatedSeconds: 20,
+      answerKey: {
+        kind: "choice",
+        options: [
+          { id: "1", text: "51" },
+          { id: "2", text: "57" },
+          { id: "3", text: "59" },
+          { id: "4", text: "91" },
+        ],
+        correctOptionId: "3",
+      },
+      authorId: user.id,
+      categories: { create: [{ categoryId: numberTheory.id }] },
+      hints: {
+        create: [
+          { order: 1, label: "핵심 개념", body: { blocks: [{ id: "h1", kind: "text", text: "51 = 3 × 17, 57 = 3 × 19, 91 = 7 × 13" }] } },
+        ],
+      },
+    },
+  });
+
+  await prisma.content.create({
+    data: {
+      id: "seed-short-ramanujan",
+      type: ContentType.ANECDOTE,
+      isShort: true,
+      title: "1729번 택시",
+      body: {
+        blocks: [
+          { id: "b1", kind: "text", text: "병문안을 온 하디가 택시 번호 1729가 재미없는 수라고 하자, 라마누잔은 서로 다른 두 세제곱수의 합으로 두 가지 방법으로 쓸 수 있는 가장 작은 수라고 답했다." },
+          { id: "b2", kind: "latex", source: "1729 = 1^3 + 12^3 = 9^3 + 10^3", display: "block" },
+        ],
+      },
+      searchText: "라마누잔 하디 1729 택시 세제곱수 1^3 + 12^3 = 9^3 + 10^3",
+      latexExpressions: ["1729 = 1^3 + 12^3 = 9^3 + 10^3"],
+      difficulty: 2,
+      estimatedSeconds: 40,
+      authorId: user.id,
+      categories: { create: [{ categoryId: numberTheory.id }] },
+    },
+  });
+
+  const today = new Date();
+  const dateOnly = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const quiz = await prisma.dailyQuiz.upsert({
+    where: { date: dateOnly },
+    create: { date: dateOnly, title: "오늘의 Math Rush", durationSeconds: 180 },
+    update: {},
+  });
+  await prisma.dailyQuizProblem.deleteMany({ where: { dailyQuizId: quiz.id } });
+  await prisma.dailyQuizProblem.createMany({
+    data: [
+      { dailyQuizId: quiz.id, order: 1, contentId: "seed-quadratic" },
+      { dailyQuizId: quiz.id, order: 2, contentId: "seed-pythagoras" },
+    ],
+  });
+
+  console.log(`Seed complete: ${SEED_IDS.length}개 콘텐츠(쇼츠 3개 포함), 오늘의 퀴즈.`);
 }
 
 main()

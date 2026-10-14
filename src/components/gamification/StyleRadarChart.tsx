@@ -79,7 +79,7 @@ export function StyleRadarChart({
               y={labelPos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              className="fill-[var(--muted)] text-[10px]"
+              className="fill-[var(--foreground)] text-[11px] font-semibold"
             >
               {axis.label}
             </text>
@@ -90,12 +90,13 @@ export function StyleRadarChart({
       {/* data polygon — single series */}
       <polygon
         points={polygon}
-        className="fill-accent/20 stroke-accent"
+        className="fill-[var(--hl)] stroke-foreground"
+        fillOpacity={0.75}
         strokeWidth={2}
-        strokeLinejoin="round"
+        strokeLinejoin="miter"
       />
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={3} className="fill-accent" />
+        <rect key={i} x={p.x - 3} y={p.y - 3} width={6} height={6} className="fill-foreground" />
       ))}
     </svg>
   );

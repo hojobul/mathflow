@@ -15,6 +15,7 @@ export interface FeedItem {
 export interface GetFeedOptions {
   limit?: number;
   cursor?: string; // last-seen content id, for simple keyset pagination over the ranked page
+  format?: "long" | "short"; // 일반 피드(long)와 쇼츠(short)는 후보군이 분리된다
 }
 
 /**
@@ -45,6 +46,7 @@ export async function getPersonalizedFeed(
   const candidates = await prisma.content.findMany({
     where: {
       status: ContentStatus.PUBLISHED,
+      isShort: options.format === "short",
       id: { notIn: [...recentlySeenIds] },
     },
     include: { categories: { select: { categoryId: true } } },

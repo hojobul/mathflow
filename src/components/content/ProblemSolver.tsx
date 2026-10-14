@@ -25,25 +25,28 @@ export function ProblemSolver({ contentId, spec }: { contentId: string; spec: Pu
         body: JSON.stringify({ answer }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "채점 실패");
+      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "채점에 실패했습니다.");
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "채점 실패");
+      setError(err instanceof Error ? err.message : "채점에 실패했습니다.");
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-2 p-4">
-      <h3 className="text-sm font-semibold">내 답 확인하기</h3>
+    <div className="flex flex-col gap-3 border border-foreground bg-surface p-4">
+      <h3 className="text-xs font-bold tracking-wide">답안</h3>
       <AnswerInput spec={spec} pending={pending} onSubmit={submit} />
       {error && <p className="text-xs text-danger">{error}</p>}
       {result && (
-        <p className={`text-sm font-medium ${result.isCorrect ? "text-success" : "text-danger"}`}>
-          {result.isCorrect ? "정답이에요! 🎉" : "아쉬워요, 다시 도전해 보세요."}{" "}
-          <span className="font-normal text-muted">이 문제 정답률 {result.percentCorrect}%</span>
-          {result.savedToWrongNote && <span className="font-normal text-muted"> · 오답노트에 저장됨</span>}
+        <p className="text-sm">
+          <strong className={result.isCorrect ? "text-success" : "text-danger"}>
+            {result.isCorrect ? "정답입니다." : "오답입니다."}
+          </strong>{" "}
+          <span className="text-muted">
+            정답률 {result.percentCorrect}%{result.savedToWrongNote && " · 오답노트에 저장함"}
+          </span>
         </p>
       )}
     </div>

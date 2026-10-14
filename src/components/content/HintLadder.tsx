@@ -22,7 +22,7 @@ interface HintLadderProps {
   onHintRevealed?: (hintId: string, order: number) => void;
 }
 
-/** [힌트 1: 핵심 개념] -> [힌트 2: 접근법] -> [전체 풀이] 순차 공개. */
+/** 힌트를 순서대로만 열 수 있다: 핵심 개념, 접근법, 전체 풀이. */
 export function HintLadder({ contentId, userId, hints, onHintRevealed }: HintLadderProps) {
   const [revealed, setRevealed] = useState<RevealedHint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,26 +49,21 @@ export function HintLadder({ contentId, userId, hints, onHintRevealed }: HintLad
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-dashed border-line-strong p-3">
+    <div className="flex flex-col gap-3 border-l-2 border-foreground pl-4">
       {revealed.map((h) => (
-        <div key={h.id} className="border-b border-line pb-2 last:border-0">
-          <p className="mb-1 text-[11px] font-medium text-muted">
-            힌트 {h.order} · {h.label}
+        <div key={h.id}>
+          <p className="meta mb-1 font-bold text-foreground">
+            힌트 {h.order} / {h.label}
           </p>
           <ContentBodyView body={h.body} />
         </div>
       ))}
       {next ? (
-        <button
-          type="button"
-          onClick={revealNext}
-          disabled={loading}
-          className="btn-ghost self-start text-xs"
-        >
-          {loading ? "불러오는 중…" : `힌트 ${next.order} 보기 · ${next.label}`}
+        <button type="button" onClick={revealNext} disabled={loading} className="btn-ghost self-start">
+          {loading ? "여는 중" : `힌트 ${next.order} 열기 (${next.label})`}
         </button>
       ) : (
-        <p className="text-xs text-muted">모든 힌트를 확인했어요.</p>
+        <p className="meta">힌트 끝</p>
       )}
     </div>
   );

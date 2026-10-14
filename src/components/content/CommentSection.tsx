@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/lib/auth/client";
+import { requestLogin } from "@/lib/auth/requestLogin";
 
 interface CommentItem {
   id: string;
@@ -22,7 +23,7 @@ export function CommentSection({ contentId }: { contentId: string }) {
     fetch(`/api/content/${contentId}/comments`)
       .then((res) => res.json())
       .then((data) => setComments(data.comments))
-      .catch(() => setError("댓글을 불러오지 못했어요"));
+      .catch(() => setError("댓글을 불러오지 못했습니다."));
   }, [contentId]);
 
   async function submit(e: React.FormEvent) {
@@ -37,33 +38,33 @@ export function CommentSection({ contentId }: { contentId: string }) {
         body: JSON.stringify({ body: draft.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "댓글 작성 실패");
+      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "등록에 실패했습니다.");
       setComments((c) => [...(c ?? []), data.comment]);
       setDraft("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "댓글 작성 실패");
+      setError(err instanceof Error ? err.message : "등록에 실패했습니다.");
     } finally {
       setPosting(false);
     }
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-medium">댓글 {comments ? `${comments.length}개` : ""}</h2>
+    <section id="comments" className="flex flex-col gap-3">
+      <h2 className="section-label">댓글 {comments ? comments.length : ""}</h2>
 
       {comments === null ? (
-        <p className="text-xs text-muted">불러오는 중…</p>
+        <p className="meta">불러오는 중</p>
       ) : comments.length === 0 ? (
-        <p className="text-xs text-muted">아직 댓글이 없어요.</p>
+        <p className="text-sm text-muted">댓글 없음</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul>
           {comments.map((c) => (
-            <li key={c.id} className="rounded-md border border-line p-3 text-sm">
-              <div className="mb-1 flex items-center gap-2 text-xs text-muted">
-                <Link href={`/creator/${c.author.id}`} className="font-medium hover:underline">
+            <li key={c.id} className="border-b border-line py-3 text-sm">
+              <div className="mb-1 flex items-baseline gap-3">
+                <Link href={`/creator/${c.author.id}`} className="font-bold hover:underline">
                   {c.author.displayName}
                 </Link>
-                <span>{new Date(c.createdAt).toLocaleString("ko-KR")}</span>
+                <span className="meta">{new Date(c.createdAt).toLocaleString("ko-KR")}</span>
               </div>
               <p className="whitespace-pre-wrap">{c.body}</p>
             </li>
@@ -78,21 +79,19 @@ export function CommentSection({ contentId }: { contentId: string }) {
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="댓글을 입력하세요…"
+            placeholder="댓글"
             rows={2}
             maxLength={2000}
-            className="rounded-xl border border-line bg-transparent p-3 text-sm outline-none focus:border-accent"
+            className="field resize-y"
           />
-          <button
-            type="submit"
-            disabled={!draft.trim() || posting}
-            className="btn-primary self-end"
-          >
-            {posting ? "작성 중…" : "댓글 달기"}
+          <button type="submit" disabled={!draft.trim() || posting} className="btn-primary self-end">
+            {posting ? "등록 중" : "등록"}
           </button>
         </form>
       ) : (
-        <p className="text-xs text-muted">댓글을 달려면 로그인이 필요해요.</p>
+        <p className="text-sm text-muted">
+          댓글은 <button type="button" onClick={requestLogin} className="font-bold underline underline-offset-2">로그인</button> 후 작성할 수 있습니다.
+        </p>
       )}
     </section>
   );

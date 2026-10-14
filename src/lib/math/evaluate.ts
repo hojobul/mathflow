@@ -152,7 +152,7 @@ function parse(source: string): Node {
 
   function parseAtom(): Node {
     const tok = peek();
-    if (!tok) throw new ExpressionError("수식이 예상보다 일찍 끝났어요");
+    if (!tok) throw new ExpressionError("수식이 중간에 끝났습니다");
 
     if (tok.type === "num") {
       next();
@@ -163,7 +163,7 @@ function parse(source: string): Node {
       if (peek() && peek().type === "op" && (peek() as { op: string }).op === "(") {
         next(); // consume "("
         const arg = parseExpr();
-        if (!peek() || (peek() as { op: string }).op !== ")") throw new ExpressionError("닫는 괄호가 없어요");
+        if (!peek() || (peek() as { op: string }).op !== ")") throw new ExpressionError("닫는 괄호가 없습니다");
         next();
         return { kind: "call", fn: tok.name, arg };
       }
@@ -172,7 +172,7 @@ function parse(source: string): Node {
     if (tok.type === "op" && tok.op === "(") {
       next();
       const inner = parseExpr();
-      if (!peek() || (peek() as { op: string }).op !== ")") throw new ExpressionError("닫는 괄호가 없어요");
+      if (!peek() || (peek() as { op: string }).op !== ")") throw new ExpressionError("닫는 괄호가 없습니다");
       next();
       return inner;
     }
@@ -180,6 +180,6 @@ function parse(source: string): Node {
   }
 
   const result = parseExpr();
-  if (pos < tokens.length) throw new ExpressionError("수식 끝에 남은 문자가 있어요");
+  if (pos < tokens.length) throw new ExpressionError("수식 끝에 해석되지 않은 문자가 있습니다");
   return result;
 }

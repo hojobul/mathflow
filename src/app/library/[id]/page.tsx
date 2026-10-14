@@ -9,7 +9,8 @@ import { InteractiveGraphWidget } from "@/components/content/InteractiveGraphWid
 import { HintLadder } from "@/components/content/HintLadder";
 import { ProblemSolver } from "@/components/content/ProblemSolver";
 import { CommentSection } from "@/components/content/CommentSection";
-import { TYPE_LABEL, TYPE_STYLE } from "@/components/content/ContentCard";
+import { Difficulty, TYPE_LABEL } from "@/components/content/ContentCard";
+import { Icon } from "@/components/ui/Icon";
 import { toPublicAnswerSpec } from "@/lib/grading";
 import { getSessionAppUser } from "@/lib/auth/currentUser";
 import { GUEST_USER_ID_CLIENT } from "@/lib/auth/constants";
@@ -56,32 +57,35 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
 
   return (
     <main className="page max-w-2xl">
-      <Link href="/library" className="text-sm text-muted hover:underline">
-        ← 탐색
+      <Link href="/library" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
+        <Icon name="arrow-left" size={15} />
+        탐색
       </Link>
 
-      <div>
-        <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px]">
-          <span className={`rounded-full px-2 py-0.5 font-semibold ${TYPE_STYLE[content.type] ?? "bg-surface-2"}`}>
-            {TYPE_LABEL[content.type] ?? content.type}
-          </span>
-          <span className="text-muted">
-            난이도 {content.difficulty}/5 · 약 {content.estimatedSeconds}초
-          </span>
+      <header>
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="tag">{TYPE_LABEL[content.type] ?? content.type}</span>
+          {content.isShort && (
+            <span className="tag bg-foreground" style={{ color: "var(--accent-ink)" }}>
+              쇼츠
+            </span>
+          )}
+          <Difficulty level={content.difficulty} />
+          <span className="meta">{content.estimatedSeconds}초</span>
           {content.categories.map((c) => (
-            <span key={c.category.name} className="rounded-full border border-line px-2 py-0.5 text-muted">
-              {c.category.name}
+            <span key={c.category.name} className="text-xs text-muted">
+              #{c.category.name}
             </span>
           ))}
         </div>
-        <h1 className="text-2xl font-bold leading-snug tracking-tight">{content.title}</h1>
+        <h1 className="font-serif text-3xl font-bold leading-snug tracking-tight">{content.title}</h1>
         {content.summary && <p className="mt-2 text-muted">{content.summary}</p>}
         {content.author && (
-          <Link href={`/creator/${content.author.id}`} className="mt-3 inline-block text-sm text-muted hover:underline">
-            by <span className="font-semibold text-foreground">{content.author.displayName}</span>
+          <Link href={`/creator/${content.author.id}`} className="mt-3 inline-block text-sm font-bold hover:underline">
+            {content.author.displayName}
           </Link>
         )}
-      </div>
+      </header>
 
       <div className="flex flex-wrap items-center gap-2">
         <LikeButton contentId={content.id} initialLiked={!!likedByViewer} initialCount={content._count.likes} />

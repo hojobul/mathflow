@@ -7,12 +7,23 @@ export const TYPE_LABEL: Record<string, string> = {
   CONCEPT: "개념",
 };
 
-export const TYPE_STYLE: Record<string, string> = {
-  PROBLEM: "bg-accent-soft text-accent",
-  HISTORY: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  ANECDOTE: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
-  CONCEPT: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-};
+/** 난이도 1~5를 눈금 5칸으로 표시한다. */
+export function Difficulty({ level }: { level: number }) {
+  return (
+    <span className="inline-flex items-center gap-1.5" title={`난이도 ${level}`}>
+      <span className="flex items-end gap-px" aria-hidden="true">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <span
+            key={n}
+            className={`w-1 ${n <= level ? "bg-foreground" : "bg-line-strong/50"}`}
+            style={{ height: 4 + n * 2 }}
+          />
+        ))}
+      </span>
+      <span className="meta">난이도 {level}</span>
+    </span>
+  );
+}
 
 export interface ContentCardData {
   id: string;
@@ -21,36 +32,34 @@ export interface ContentCardData {
   summary: string | null;
   difficulty: number;
   estimatedSeconds: number;
+  isShort?: boolean;
   categories: { category: { name: string } }[];
   author?: { id: string; displayName: string } | null;
   _count?: { likes: number };
 }
 
-/** 목록(라이브러리·검색·크리에이터·내 서재)에서 공통으로 쓰는 콘텐츠 카드. */
+/** 목록(탐색·검색·채널·서재)에서 공통으로 쓰는 한 줄 항목. */
 export function ContentCard({ item }: { item: ContentCardData }) {
   return (
-    <Link href={`/library/${item.id}`} className="card card-hover block p-4">
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-        <span className={`rounded-full px-2 py-0.5 font-semibold ${TYPE_STYLE[item.type] ?? "bg-surface-2"}`}>
-          {TYPE_LABEL[item.type] ?? item.type}
-        </span>
-        <span className="text-muted">
-          {"●".repeat(item.difficulty)}
-          <span className="opacity-30">{"●".repeat(5 - item.difficulty)}</span>
-        </span>
-        <span className="text-muted">약 {item.estimatedSeconds}초</span>
+    <Link href={`/library/${item.id}`} className="row-link">
+      <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="tag">{TYPE_LABEL[item.type] ?? item.type}</span>
+        {item.isShort && <span className="tag bg-foreground" style={{ color: "var(--accent-ink)" }}>쇼츠</span>}
+        <Difficulty level={item.difficulty} />
+        <span className="meta">{item.estimatedSeconds}초</span>
         {item.categories.map((c) => (
-          <span key={c.category.name} className="rounded-full border border-line px-2 py-0.5 text-muted">
-            {c.category.name}
+          <span key={c.category.name} className="text-xs text-muted">
+            #{c.category.name}
           </span>
         ))}
       </div>
-      <h2 className="font-semibold leading-snug">{item.title}</h2>
+      <h2 className="font-serif text-lg font-bold leading-snug">{item.title}</h2>
       {item.summary && <p className="mt-1 line-clamp-2 text-sm text-muted">{item.summary}</p>}
       {(item.author || item._count) && (
-        <p className="mt-2 text-xs text-muted">
-          {item.author && <>by {item.author.displayName}</>}
-          {item._count && <> · ♥ {item._count.likes}</>}
+        <p className="meta mt-2">
+          {item.author?.displayName}
+          {item.author && item._count && " / "}
+          {item._count && `좋아요 ${item._count.likes}`}
         </p>
       )}
     </Link>

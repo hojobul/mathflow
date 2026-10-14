@@ -5,6 +5,7 @@ import { InlineMath } from "react-katex";
 import type { ContentBlock, ContentBody } from "@/lib/content/blocks";
 import { emptyContentBody, MAX_LATEX_SOURCE_LENGTH } from "@/lib/content/blocks";
 import { ContentBodyView } from "@/components/content/ContentBodyView";
+import { Icon } from "@/components/ui/Icon";
 import { LATEX_SNIPPET_GROUPS, type LatexSnippet } from "./latexSnippets";
 
 interface LatexEditorProps {
@@ -128,19 +129,17 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 rounded-md border border-line bg-surface-2 p-3">
+        <div className="flex flex-col gap-2 border border-line bg-surface-2 p-3">
           {LATEX_SNIPPET_GROUPS.map((group) => (
             <div key={group.title} className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 shrink-0 text-[11px] font-medium text-muted">
-                {group.title}
-              </span>
+              <span className="mr-1 w-16 shrink-0 text-[11px] font-bold text-muted">{group.title}</span>
               {group.snippets.map((snippet) => (
                 <button
                   key={snippet.label}
                   type="button"
                   onClick={() => insertSnippet(snippet)}
                   title={`삽입: ${snippet.insert}`}
-                  className="rounded border border-line bg-background px-2.5 py-1.5 text-sm hover:border-line hover:bg-surface-2"
+                  className="border border-line-strong bg-surface px-2.5 py-1.5 text-sm hover:border-foreground"
                 >
                   <InlineMath math={snippet.label} />
                 </button>
@@ -148,9 +147,7 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
             </div>
           ))}
           <p className="text-[11px] text-muted">
-            {activeLatexBlockId
-              ? "선택한 기호가 현재 커서 위치에 삽입됩니다."
-              : "수식 블록을 클릭하거나, 기호를 바로 눌러 새 수식 블록을 만들 수 있어요."}
+            {activeLatexBlockId ? "커서 위치에 삽입됩니다." : "수식 블록이 없으면 기호를 누를 때 새로 만듭니다."}
           </p>
         </div>
 
@@ -158,55 +155,42 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
           {body.blocks.map((block, i) => (
             <div
               key={block.id}
-              className={`relative rounded-md border p-3 pl-8 ${
-                activeLatexBlockId === block.id
-                  ? "border-accent "
-                  : "border-line"
-              }`}
+              className={`relative border p-3 pl-10 ${activeLatexBlockId === block.id ? "border-foreground" : "border-line"}`}
             >
-              <div className="absolute left-1.5 top-3 flex flex-col gap-1">
+              <div className="absolute left-2 top-3 flex flex-col gap-1.5 text-muted">
                 <button
                   type="button"
                   onClick={() => moveBlock(block.id, -1)}
                   disabled={i === 0}
                   aria-label="위로 이동"
-                  className="text-xs text-muted hover:text-foreground disabled:opacity-20"
+                  className="hover:text-foreground disabled:opacity-20"
                 >
-                  ↑
+                  <Icon name="arrow-up" size={15} />
                 </button>
                 <button
                   type="button"
                   onClick={() => moveBlock(block.id, 1)}
                   disabled={i === body.blocks.length - 1}
                   aria-label="아래로 이동"
-                  className="text-xs text-muted hover:text-foreground disabled:opacity-20"
+                  className="hover:text-foreground disabled:opacity-20"
                 >
-                  ↓
+                  <Icon name="arrow-down" size={15} />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => removeBlock(block.id)}
-                  aria-label="블록 삭제"
-                  className="text-xs text-red-400 hover:text-red-600"
-                >
-                  ✕
+                <button type="button" onClick={() => removeBlock(block.id)} aria-label="블록 삭제" className="hover:text-danger">
+                  <Icon name="close" size={15} />
                 </button>
               </div>
 
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted">
-                  {block.kind === "text" ? "텍스트" : "수식"}
-                </span>
-              </div>
+              <p className="mb-1.5 text-[11px] font-bold text-muted">{block.kind === "text" ? "텍스트" : "수식"}</p>
 
               {block.kind === "text" && (
                 <textarea
                   value={block.text}
                   onChange={(e) => updateBlock(block.id, { text: e.target.value })}
                   onFocus={() => setActiveLatexBlockId(null)}
-                  placeholder="본문을 입력하세요…"
+                  placeholder="본문"
                   rows={3}
-                  className="w-full resize-y bg-transparent text-sm outline-none"
+                  className="w-full resize-y bg-transparent text-sm outline-none placeholder:text-muted"
                 />
               )}
 
@@ -224,7 +208,7 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                     rows={2}
                     spellCheck={false}
                     maxLength={MAX_LATEX_SOURCE_LENGTH}
-                    className="w-full resize-y rounded bg-surface-2 p-2 font-mono text-sm outline-none"
+                    className="w-full resize-y bg-surface-2 p-2 font-mono text-sm outline-none placeholder:text-muted"
                   />
                   <div className="flex items-center justify-between gap-2">
                     <label className="flex items-center gap-2 text-xs text-muted">
@@ -232,23 +216,20 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
                         type="checkbox"
                         checked={block.display === "block"}
                         onChange={(e) => updateBlock(block.id, { display: e.target.checked ? "block" : "inline" })}
+                        className="accent-[var(--foreground)]"
                       />
-                      블록 수식으로 표시 (한 줄 전체 차지)
+                      블록 수식 (줄 전체)
                     </label>
                     <span
-                      className={`shrink-0 text-[11px] tabular-nums ${
-                        block.source.length >= MAX_LATEX_SOURCE_LENGTH
-                          ? "text-danger"
-                          : "text-muted"
+                      className={`shrink-0 font-mono text-[11px] tabular-nums ${
+                        block.source.length >= MAX_LATEX_SOURCE_LENGTH ? "text-danger" : "text-muted"
                       }`}
                     >
                       {block.source.length} / {MAX_LATEX_SOURCE_LENGTH}
                     </span>
                   </div>
                   {HANGUL_RE.test(block.source) && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                      한글이 섞여 있어요 — 설명 문장은 수식 블록 대신 텍스트 블록에 적어주세요.
-                    </p>
+                    <p className="text-[11px] font-semibold text-danger">수식 블록에 한글이 있습니다. 설명은 텍스트 블록에 쓰세요.</p>
                   )}
                 </div>
               )}
@@ -257,26 +238,20 @@ export function LatexEditor({ initialValue, onChange }: LatexEditorProps) {
         </div>
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => addBlock("text")}
-            className="rounded border border-line px-3 py-1.5 text-sm hover:bg-surface-2"
-          >
-            + 텍스트 블록
+          <button type="button" onClick={() => addBlock("text")} className="btn-ghost">
+            <Icon name="plus" size={15} />
+            텍스트
           </button>
-          <button
-            type="button"
-            onClick={() => addBlock("latex")}
-            className="rounded border border-line px-3 py-1.5 text-sm hover:bg-surface-2"
-          >
-            + 수식 블록
+          <button type="button" onClick={() => addBlock("latex")} className="btn-ghost">
+            <Icon name="plus" size={15} />
+            수식
           </button>
         </div>
       </div>
 
-      <div className="lg:sticky lg:top-4 lg:self-start">
-        <div className="mb-1.5 text-xs font-medium text-muted">미리보기</div>
-        <div className="rounded-md border border-line bg-background p-4">
+      <div className="lg:sticky lg:top-20 lg:self-start">
+        <p className="mb-1.5 text-xs font-bold text-muted">미리보기</p>
+        <div className="card p-4">
           <ContentBodyView body={body} />
         </div>
       </div>

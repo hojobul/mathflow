@@ -1,49 +1,51 @@
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 
-const FEATURES = [
-  { icon: "🎯", title: "나에게 맞는 피드", body: "읽은 시간, 풀이 습관, 좋아요를 보고 내 실력과 취향에 맞는 콘텐츠를 먼저 보여줘요." },
-  { icon: "⚡", title: "Daily Math Rush", body: "매일 3분 타임어택. 정답률과 상위 % 로 오늘의 나를 확인하세요." },
-  { icon: "✍️", title: "수식으로 바로 만들기", body: "LaTeX 툴바와 실시간 미리보기로 문제·힌트·정답까지 한 번에 발행해요." },
-  { icon: "📚", title: "나만의 수학 서재", body: "스크랩북, 틀린 문제를 모아주는 오답노트, 개념 앨범까지." },
+const INDEX = [
+  { no: "01", href: "/feed", title: "피드", note: "읽은 시간과 풀이 기록을 반영해 순서를 정한 콘텐츠" },
+  { no: "02", href: "/shorts", title: "쇼츠", note: "60초 안에 끝나는 짧은 문제와 설명" },
+  { no: "03", href: "/quiz", title: "Math Rush", note: "하루 한 번, 3분 제한 퀴즈" },
+  { no: "04", href: "/me/library", title: "서재", note: "스크랩, 오답노트, 개념 앨범" },
+  { no: "05", href: "/editor", title: "에디터", note: "LaTeX로 작성. 문제는 정답과 힌트를 붙일 수 있음" },
 ];
 
 export default function Home() {
   return (
-    <main className="page max-w-4xl gap-12 py-14">
-      <section className="flex flex-col items-center gap-5 text-center">
-        <span className="chip chip-active pointer-events-none">수학이 피드가 되다</span>
-        <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-          보다 보면 <span className="text-accent">수학이 늘어요</span>
+    <main className="page max-w-3xl gap-10 py-14">
+      <section>
+        <p className="meta mb-4">MathFlow</p>
+        <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+          문제, 수학사, 증명 뒷이야기를
+          <br />
+          <span className="hl">짧게 읽고 직접 풉니다.</span>
         </h1>
-        <p className="max-w-xl text-muted">
-          문제, 수학사, 비하인드 스토리, 인터랙티브 그래프까지. 스크롤하는 만큼 나에게 맞춰지는 수학 콘텐츠 플랫폼.
+        <p className="mt-5 max-w-xl text-muted">
+          콘텐츠는 읽은 시간, 힌트 사용, 정답 여부, 좋아요, 구독을 기준으로 정렬됩니다. 작성자는 누구나 될 수 있습니다.
         </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link href="/feed" className="btn-primary px-6 py-3">
-            피드 시작하기
+        <div className="mt-6 flex gap-3">
+          <Link href="/feed" className="btn-primary">
+            피드 열기
           </Link>
-          <Link href="/quiz" className="btn-ghost px-6 py-3">
-            오늘의 Math Rush
+          <Link href="/shorts" className="btn-ghost">
+            쇼츠
           </Link>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        {FEATURES.map((f) => (
-          <div key={f.title} className="card p-5">
-            <div className="mb-2 text-2xl">{f.icon}</div>
-            <h2 className="font-semibold">{f.title}</h2>
-            <p className="mt-1 text-sm text-muted">{f.body}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="card flex flex-col items-center gap-3 p-8 text-center">
-        <h2 className="text-xl font-bold">내가 아는 수학, 나눠볼까요?</h2>
-        <p className="text-sm text-muted">크리에이터가 되어 채널을 만들고 구독자를 모아보세요.</p>
-        <Link href="/editor" className="btn-primary">
-          콘텐츠 만들기
-        </Link>
+      <section>
+        <h2 className="section-label mb-1">목차</h2>
+        <ol>
+          {INDEX.map((row) => (
+            <li key={row.no}>
+              <Link href={row.href} className="row-link flex items-baseline gap-4">
+                <span className="meta w-6 shrink-0">{row.no}</span>
+                <span className="w-28 shrink-0 font-serif text-lg font-bold">{row.title}</span>
+                <span className="flex-1 text-sm text-muted">{row.note}</span>
+                <Icon name="arrow-right" size={16} className="shrink-0 self-center text-muted" />
+              </Link>
+            </li>
+          ))}
+        </ol>
       </section>
     </main>
   );

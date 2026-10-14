@@ -8,16 +8,10 @@ import { SubscribeButton } from "./SubscribeButton";
 import { HintLadder } from "./HintLadder";
 import { ProblemSolver } from "./ProblemSolver";
 import { InteractiveGraphWidget } from "./InteractiveGraphWidget";
+import { Difficulty, TYPE_LABEL } from "./ContentCard";
 import { useContentTracking } from "@/components/tracking/useContentTracking";
 import type { FeedContentItem } from "@/lib/feed/types";
 import { isGraphWidgetConfig } from "@/lib/content/widget";
-
-const TYPE_LABEL: Record<string, string> = {
-  PROBLEM: "문제",
-  HISTORY: "수학사",
-  ANECDOTE: "비하인드",
-  CONCEPT: "개념",
-};
 
 interface FeedCardProps {
   item: FeedContentItem;
@@ -29,27 +23,24 @@ export function FeedCard({ item, userId }: FeedCardProps) {
   const [solutionShown, setSolutionShown] = useState(false);
 
   return (
-    <article
-      ref={containerRef}
-      className="card flex max-h-[85vh] flex-col gap-3 overflow-y-auto p-5"
-    >
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted">
-        <span className="rounded bg-surface-2 px-1.5 py-0.5 font-medium">
-          {TYPE_LABEL[item.type] ?? item.type}
-        </span>
-        <span>난이도 {item.difficulty}/5</span>
-        <span>· 약 {item.estimatedSeconds}초</span>
+    <article ref={containerRef} className="card flex max-h-[88vh] flex-col gap-4 overflow-y-auto p-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="tag">{TYPE_LABEL[item.type] ?? item.type}</span>
+        <Difficulty level={item.difficulty} />
+        <span className="meta">{item.estimatedSeconds}초</span>
         {item.categories.map((c) => (
-          <span key={c.slug} className="rounded-full border border-line px-2 py-0.5">
-            {c.name}
+          <span key={c.slug} className="text-xs text-muted">
+            #{c.name}
           </span>
         ))}
       </div>
 
-      <Link href={`/library/${item.id}`} className="text-lg font-semibold hover:underline">
-        {item.title}
-      </Link>
-      {item.summary && <p className="text-sm text-muted">{item.summary}</p>}
+      <div>
+        <Link href={`/library/${item.id}`} className="font-serif text-xl font-bold leading-snug hover:underline">
+          {item.title}
+        </Link>
+        {item.summary && <p className="mt-1 text-sm text-muted">{item.summary}</p>}
+      </div>
 
       <ContentBodyView body={item.body} />
 
@@ -75,22 +66,28 @@ export function FeedCard({ item, userId }: FeedCardProps) {
         />
       )}
 
-      <div className="mt-1 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
+        <div className="flex items-center gap-3">
           {item.author && (
             <>
-              <Link href={`/creator/${item.author.id}`} className="text-xs text-muted hover:underline">
-                by {item.author.displayName}
+              <Link href={`/creator/${item.author.id}`} className="text-sm font-bold hover:underline">
+                {item.author.displayName}
               </Link>
               <SubscribeButton
                 creatorId={item.author.id}
                 initialSubscribed={item.subscribedByViewer}
                 initialCount={item.subscriberCount}
+                compact
               />
             </>
           )}
         </div>
-        <LikeButton contentId={item.id} initialLiked={item.likedByViewer} initialCount={item._count.likes} />
+        <div className="flex items-center gap-2">
+          <Link href={`/library/${item.id}#comments`} className="chip">
+            댓글 <span className="font-mono tabular-nums">{item._count.comments}</span>
+          </Link>
+          <LikeButton contentId={item.id} initialLiked={item.likedByViewer} initialCount={item._count.likes} />
+        </div>
       </div>
     </article>
   );
